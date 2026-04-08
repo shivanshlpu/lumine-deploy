@@ -1,0 +1,279 @@
+:root {
+    --primary: #d97706;
+    --primary-light: #fff7ed;
+    --navy: #012a4a;
+    --bg-body: #f3f4f6;
+    --white: #ffffff;
+    --radius: 12px;
+    --green: #10b981;
+    --red: #ef4444;
+}
+
+body {
+    font-family: 'Poppins', sans-serif;
+    background-color: var(--bg-body);
+    color: #1e293b;
+    height: auto;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+}
+
+.brand-font {
+    font-family: 'Laila', serif;
+}
+
+/* --- Navbar --- */
+.top-header {
+    background: var(--white);
+    height: 70px;
+    padding: 0 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid var(--primary);
+    flex-shrink: 0;
+    z-index: 50;
+}
+
+/* --- Layout Grid --- */
+.app-container {
+    display: flex;
+    flex: 1;
+    height: calc(100vh - 70px);
+    overflow: hidden;
+}
+
+/* --- Sidebar --- */
+.sidebar {
+    width: 260px;
+    background: #fdfbf7;
+    border-right: 1px solid #e5e7eb;
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    flex-shrink: 0;
+    height: 100%;
+    overflow-y: auto;
+}
+
+.nav-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    border-radius: 12px;
+    color: #64748b;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: 8px;
+}
+
+.nav-item:hover {
+    background: #fff7ed;
+    color: var(--primary);
+}
+
+.nav-item.active {
+    background: var(--primary);
+    color: white;
+    box-shadow: 0 4px 6px rgba(217, 119, 6, 0.2);
+}
+
+/* --- Main Content --- */
+.guard-main-content {
+    flex: 1;
+    padding: 16px;
+    overflow-y: auto;
+    position: relative;
+    height: 100%;
+}
+
+.view-section {
+    display: none;
+}
+
+.view-section.active {
+    display: grid;
+}
+
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: 400px 1fr;
+    gap: 16px;
+}
+
+@media (max-width: 1024px) {
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto;
+    }
+
+    .sidebar {
+        width: 80px;
+        padding: 10px;
+    }
+
+    .nav-item span {
+        display: none;
+    }
+
+    .nav-item {
+        justify-content: center;
+    }
+}
+
+/* --- Cards --- */
+.card {
+    background: var(--white);
+    border-radius: var(--radius);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Center Column Split (Fixed Layout) */
+.center-col {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* Buttons */
+.btn-action {
+    width: 100%;
+    padding: 16px;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 1.1rem;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.btn-primary {
+    background: var(--navy);
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #0f172a;
+    transform: translateY(-2px);
+}
+
+.btn-success {
+    background: var(--green);
+    color: white;
+}
+
+.btn-success:hover {
+    background: #059669;
+}
+
+.timeline-item {
+    position: relative;
+    padding-left: 24px;
+    margin-bottom: 20px;
+    border-left: 2px solid #e2e8f0;
+}
+
+.timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -6px;
+    top: 0;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #cbd5e1;
+}
+
+.timeline-item.active {
+    border-color: var(--primary);
+}
+
+.timeline-item.active::before {
+    background: var(--primary);
+    box-shadow: 0 0 0 4px #ffedd5;
+}
+
+.badge {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.badge-weapon {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.badge-crowd {
+    background: #ffedd5;
+    color: #9a3412;
+}
+
+.badge-child {
+    background: #f3e8ff;
+    color: #6b21a8;
+}
+
+/* Toast */
+.toast-notification {
+    position: fixed;
+    top: 90px;
+    right: 24px;
+    background: white;
+    border-left: 5px solid var(--primary);
+    padding: 16px 20px;
+    border-radius: 8px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    transform: translateX(200%);
+    transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+/* Modal */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: 0.3s;
+    z-index: 200;
+}
+
+.modal-overlay.open {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.modal-card {
+    background: white;
+    width: 90%;
+    max-width: 500px;
+    border-radius: 16px;
+    padding: 24px;
+    transform: scale(0.9);
+    transition: 0.3s;
+}
+
+.modal-overlay.open .modal-card {
+    transform: scale(1);
+}

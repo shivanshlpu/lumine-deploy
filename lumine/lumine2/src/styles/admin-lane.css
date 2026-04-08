@@ -1,0 +1,140 @@
+:root {
+    --primary: #D97706;
+    --primary-light: #F59E0B;
+    --brand-blue: #0F2940;
+    --bg-body: #F8F9FA;
+    --surface: #FFFFFF;
+    --text-main: #1A202C;
+    --border-radius: 12px;
+}
+
+.brand-font {
+    font-family: 'Laila', serif;
+}
+
+.lane-card {
+    background: var(--surface);
+    border: 1px solid #E2E8F0;
+    border-radius: var(--border-radius);
+    transition: all 0.2s ease;
+}
+
+.lane-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+    border-color: var(--primary);
+}
+
+.lane-card.stuck {
+    border: 2px solid #E53E3E;
+    background: #FFF5F5;
+}
+
+.lane-card.closed {
+    opacity: 0.7;
+    background: #EDF2F7;
+    border-style: dashed;
+}
+
+.sparkline {
+    fill: none;
+    stroke-width: 2;
+    stroke-linecap: round;
+}
+
+.badge {
+    padding: 4px 10px;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.badge-open {
+    background: #C6F6D5;
+    color: #22543D;
+}
+
+.badge-busy {
+    background: #FEFCBF;
+    color: #744210;
+}
+
+.badge-closed {
+    background: #CBD5E0;
+    color: #2D3748;
+}
+
+.badge-stuck {
+    background: #FED7D7;
+    color: #822727;
+    animation: pulse-red 2s infinite;
+}
+
+@keyframes pulse-red {
+    0% {
+        box-shadow: 0 0 0 0 rgba(229, 62, 62, 0.4);
+    }
+
+    70% {
+        box-shadow: 0 0 0 6px rgba(229, 62, 62, 0);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(229, 62, 62, 0);
+    }
+}
+
+.status-btn {
+    font-size: 0.7rem;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid transparent;
+}
+
+.status-btn:hover {
+    transform: scale(1.05);
+}
+
+.status-btn.active {
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+    border-color: rgba(0, 0, 0, 0.1);
+}
+
+.btn-open {
+    background: #F0FFF4;
+    color: #276749;
+}
+
+.btn-open.active {
+    background: #C6F6D5;
+    border-color: #48BB78;
+}
+
+.btn-busy {
+    background: #FFFAF0;
+    color: #9C4221;
+}
+
+.btn-busy.active {
+    background: #FEEBC8;
+    border-color: #ED8936;
+}
+
+.btn-close {
+    background: #F7FAFC;
+    color: #4A5568;
+}
+
+.btn-close.active {
+    background: #CBD5E0;
+    border-color: #A0AEC0;
+}
+
+.modal-overlay {
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(2px);
+}

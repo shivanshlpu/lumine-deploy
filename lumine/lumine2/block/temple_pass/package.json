@@ -1,0 +1,26 @@
+{
+  "name": "sih",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "hash.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^17.2.3",
+    "ethers": "^6.15.0",
+    "express": "^5.1.0",
+    "jimp": "^0.22.10",
+    "qrcode": "^1.5.4",
+    "qrcode-reader": "^1.0.4",
+    "uuid": "^13.0.0"
+  },
+  "description": "",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-ethers": "^4.0.3",
+    "hardhat": "^3.0.15"
+  }
+}

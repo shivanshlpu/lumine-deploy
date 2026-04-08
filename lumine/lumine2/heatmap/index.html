@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CrowdMap Premium</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #1a1a1a;
+            --panel-bg: rgba(30, 30, 30, 0.85);
+            --text-color: #ffffff;
+            --accent-color: #3b82f6;
+            --border-color: #333;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            overflow: hidden;
+        }
+
+        #map {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 100%;
+            z-index: 1;
+        }
+
+        /* Grid Background for Plane Mode */
+        .grid-bg {
+            background-color: #0f172a;
+            background-image:
+                linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+            background-size: 50px 50px;
+        }
+
+        /* Glassmorphism Sidebar */
+        #sidebar {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            width: 320px;
+            background: var(--panel-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-radius: 16px;
+            padding: 20px;
+            z-index: 1000;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            max-height: 90vh;
+            overflow-y: auto;
+            transition: transform 0.3s ease;
+        }
+
+        h2 {
+            margin-top: 0;
+            font-weight: 600;
+            font-size: 1.2rem;
+            letter-spacing: -0.5px;
+        }
+
+        h3 {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            color: #888;
+            margin-bottom: 10px;
+            letter-spacing: 1px;
+        }
+
+        .control-group {
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .control-group:last-child {
+            border-bottom: none;
+        }
+
+        label {
+            display: block;
+            font-size: 0.85rem;
+            margin-bottom: 8px;
+            color: #ccc;
+        }
+
+        input[type="text"],
+        input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: white;
+            font-family: inherit;
+            box-sizing: border-box;
+            margin-bottom: 10px;
+            transition: border-color 0.2s;
+        }
+
+        input[type="text"]:focus,
+        input[type="number"]:focus {
+            outline: none;
+            border-color: var(--accent-color);
+        }
+
+        input[type="range"] {
+            width: 100%;
+            margin: 10px 0;
+            accent-color: var(--accent-color);
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+        }
+
+        button:hover {
+            background: #2563eb;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        .camera-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .camera-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .camera-item.active {
+            border: 1px solid var(--accent-color);
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+            margin-left: auto;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #444;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="map"></div>
+
+    <div id="sidebar">
+        <h2>CrowdMap Control <span style="font-size:0.6em; color:#666;">v2.1</span></h2>
+
+        <div class="control-group">
+            <h3>Visualization</h3>
+            <label>Background</label>
+            <select id="bg-style" onchange="updateBackground()">
+                <option value="map">Map (Dark)</option>
+                <option value="plane">Plane (Grid)</option>
+            </select>
+
+            <label>Style</label>
+            <select id="heatmap-style" onchange="updateVisualization()">
+                <option value="radar">Weather Radar</option>
+                <option value="analytics">Crowd Analytics</option>
+                <option value="jet">Density (Jet)</option>
+                <option value="inferno">Inferno (Fire)</option>
+                <option value="viridis">Viridis (Modern)</option>
+                <option value="plasma">Plasma (Vibrant)</option>
+            </select>
+
+            <label>Mode</label>
+            <select id="viz-mode" onchange="updateVisualization()">
+                <option value="heatmap">Heatmap</option>
+                <option value="grid">Zone Grid</option>
+            </select>
+
+            <div id="heatmap-controls">
+                <label>Radius: <span id="radius-display">50</span></label>
+                <input type="range" id="heat-radius" min="5" max="100" value="50" oninput="updateVisualization()">
+
+                <label>Blur: <span id="blur-display">35</span></label>
+                <input type="range" id="heat-blur" min="5" max="100" value="35" oninput="updateVisualization()">
+
+                <label>Opacity: <span id="opacity-display">0.6</span></label>
+                <input type="range" id="heat-opacity" min="0.1" max="1.0" step="0.1" value="0.6"
+                    oninput="updateVisualization()">
+            </div>
+        </div>
+
+        <div class="control-group">
+            <h3>Active Cameras</h3>
+            <div id="camera-list">
+                <!-- Camera items will be injected here -->
+            </div>
+            <button onclick="addCameraAtCenter()" style="margin-top: 10px; background: #333;">+ Add Camera</button>
+        </div>
+
+        <div id="camera-settings" style="display: none;">
+            <h3>Camera Settings</h3>
+            <div class="control-group">
+                <label>Name</label>
+                <input type="text" id="cam-name">
+
+                <label>Source (ID or URL)</label>
+                <input type="text" id="cam-source" placeholder="0, 1, or rtsp://...">
+
+                <label>Viewing Angle: <span id="angle-display">0</span>°</label>
+                <input type="range" id="cam-angle" min="0" max="360" value="0">
+
+                <label>Field of View: <span id="fov-display">60</span>°</label>
+                <input type="range" id="cam-fov" min="10" max="120" value="60">
+
+                <label>Camera Height: <span id="height-display">3</span>m</label>
+                <input type="range" id="cam-height" min="1" max="20" step="0.5" value="3">
+
+                <label>Tilt Angle: <span id="tilt-display">45</span>°</label>
+                <input type="range" id="cam-tilt" min="0" max="90" value="45">
+
+                <button onclick="saveCameraSettings()">Apply Changes</button>
+                <button onclick="deleteCamera()" style="background: #ef4444; margin-top: 10px;">Delete Camera</button>
+                <button onclick="viewFeed()" style="background: #10b981; margin-top: 10px;">View Live Feed</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Video Feed Modal -->
+    <div id="video-modal"
+        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:2000; justify-content:center; align-items:center;">
+        <div
+            style="background:#1a1a1a; padding:20px; border-radius:12px; max-width:800px; width:90%; position:relative;">
+            <button onclick="closeFeed()"
+                style="position:absolute; top:10px; right:10px; width:30px; height:30px; padding:0; background:#ef4444; border-radius:50%;">×</button>
+            <h3 id="feed-title" style="margin-top:0;">Live Feed</h3>
+            <img id="live-feed-img" src="" style="width:100%; border-radius:8px; background:#000; min-height:300px;">
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://leaflet.github.io/Leaflet.heat/dist/leaflet-heat.js"></script>
+
+    <script>
+        // --- Map Setup ---
+        // Using CartoDB Dark Matter for that premium look
+        const map = L.map('map', { zoomControl: false }).setView([28.6139, 77.2090], 18);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+            subdomains: 'abcd',
+            maxZoom: 20
+        }).addTo(map);
+
+        L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+        let heatLayer = null;
+        let gridLayer = L.layerGroup().addTo(map);
+
+        // Visualization Configs
+        const VIZ_STYLES = {
+            radar: {
+                gradient: { 0.2: '#00ffff', 0.4: '#00ff00', 0.6: '#ffff00', 0.8: '#ff0000', 1.0: '#ff00ff' }
+            },
+            analytics: {
+                gradient: { 0.25: 'blue', 0.55: 'lime', 0.85: 'red' }
+            },
+            jet: {
+                gradient: { 0.0: 'blue', 0.3: 'cyan', 0.6: 'yellow', 1.0: 'red' }
+            },
+            inferno: {
+                gradient: { 0.0: '#000004', 0.2: '#420a68', 0.4: '#932667', 0.6: '#dd513a', 0.8: '#fca50a', 1.0: '#fcffa4' }
+            },
+            viridis: {
+                gradient: { 0.0: '#440154', 0.2: '#414487', 0.4: '#2a788e', 0.6: '#22a884', 0.8: '#7ad151', 1.0: '#fde725' }
+            },
+            plasma: {
+                gradient: { 0.0: '#0d0887', 0.2: '#6a00a8', 0.4: '#b12a90', 0.6: '#e16462', 0.8: '#fca636', 1.0: '#f0f921' }
+            }
+        };
+
+        // ... (initHeatmap) ...
+
+        // Video Feed Logic
+        let feedInterval = null;
+
+        function viewFeed() {
+            if (!selectedCameraId) return;
+            const cam = cameraData.find(c => c.id === selectedCameraId);
+            document.getElementById('feed-title').innerText = `Live Feed: ${cam.name || cam.id}`;
+            document.getElementById('video-modal').style.display = 'flex';
+
+            const img = document.getElementById('live-feed-img');
+
+            // Simple MJPEG-like polling
+            clearInterval(feedInterval);
+            feedInterval = setInterval(() => {
+                img.src = `/cameras/${selectedCameraId}/feed?t=${Date.now()}`;
+            }, 100); // 10fps
+        }
+
+        function closeFeed() {
+            document.getElementById('video-modal').style.display = 'none';
+            clearInterval(feedInterval);
+            document.getElementById('live-feed-img').src = "";
+        }
+
+        function initHeatmap() {
+            // Default to radar
+            heatLayer = L.heatLayer([], { radius: 50, blur: 35, minOpacity: 0.6, gradient: VIZ_STYLES.radar.gradient }).addTo(map);
+        }
+        initHeatmap();
+
+        function updateVisualization() {
+            const style = document.getElementById('heatmap-style').value;
+            const mode = document.getElementById('viz-mode').value;
+
+            // Get slider values
+            const radius = parseInt(document.getElementById('heat-radius').value);
+            const blur = parseInt(document.getElementById('heat-blur').value);
+            const opacity = parseFloat(document.getElementById('heat-opacity').value);
+
+            // Update displays
+            document.getElementById('radius-display').innerText = radius;
+            document.getElementById('blur-display').innerText = blur;
+            document.getElementById('opacity-display').innerText = opacity;
+
+            // Clear existing
+            if (heatLayer) map.removeLayer(heatLayer);
+            gridLayer.clearLayers();
+
+            if (mode === 'heatmap') {
+                const gradient = VIZ_STYLES[style].gradient;
+                const options = {
+                    radius: radius,
+                    blur: blur,
+                    minOpacity: opacity, // Use slider opacity as minOpacity for density
+                    gradient: gradient
+                };
+                heatLayer = L.heatLayer(heatmapPoints, options).addTo(map);
+            } else if (mode === 'grid') {
+                renderZoneGrid(style);
+            }
+        }
+
+        function updateBackground() {
+            const bg = document.getElementById('bg-style').value;
+            const mapContainer = document.getElementById('map');
+
+            if (bg === 'map') {
+                if (!map.hasLayer(tileLayer)) {
+                    tileLayer.addTo(map);
+                }
+                mapContainer.classList.remove('grid-bg');
+            } else {
+                if (map.hasLayer(tileLayer)) {
+                    map.removeLayer(tileLayer);
+                }
+                mapContainer.classList.add('grid-bg');
+            }
+        }
+
+        function renderZoneGrid(styleName) {
+            if (heatmapPoints.length === 0) return;
+
+            // Simple grid implementation
+            // 1. Find bounds
+            let minLat = 90, maxLat = -90, minLon = 180, maxLon = -180;
+            heatmapPoints.forEach(p => {
+                minLat = Math.min(minLat, p[0]);
+                maxLat = Math.max(maxLat, p[0]);
+                minLon = Math.min(minLon, p[1]);
+                maxLon = Math.max(maxLon, p[1]);
+            });
+
+            // Add padding
+            const pad = 0.0005;
+            minLat -= pad; maxLat += pad; minLon -= pad; maxLon += pad;
+
+            // Grid size (approx 5 meters)
+            const step = 0.00005;
+
+            const counts = {};
+            let maxCount = 0;
+
+            // Bin points
+            heatmapPoints.forEach(p => {
+                const latIdx = Math.floor((p[0] - minLat) / step);
+                const lonIdx = Math.floor((p[1] - minLon) / step);
+                const key = `${latIdx},${lonIdx}`;
+                counts[key] = (counts[key] || 0) + 1;
+                maxCount = Math.max(maxCount, counts[key]);
+            });
+
+            // Draw cells
+            for (const key in counts) {
+                const [latIdx, lonIdx] = key.split(',').map(Number);
+                const cellLat = minLat + latIdx * step;
+                const cellLon = minLon + lonIdx * step;
+                const count = counts[key];
+                const intensity = count / maxCount;
+
+                // Color based on style
+                let color = 'blue';
+                if (styleName === 'radar') {
+                    if (intensity > 0.8) color = '#ff00ff';
+                    else if (intensity > 0.6) color = '#ff0000';
+                    else if (intensity > 0.4) color = '#ffff00';
+                    else if (intensity > 0.2) color = '#00ff00';
+                    else color = '#00ffff';
+                } else {
+                    // Analytics
+                    if (intensity > 0.7) color = 'red';
+                    else if (intensity > 0.3) color = 'lime';
+                    else color = 'blue';
+                }
+
+                L.rectangle([[cellLat, cellLon], [cellLat + step, cellLon + step]], {
+                    color: color,
+                    weight: 1,
+                    fillOpacity: 0.4 + (intensity * 0.4)
+                }).addTo(gridLayer);
+            }
+        }
+
+        // --- State ---
+        let cameras = {}; // Map markers
+        let cameraCones = {}; // FOV polygons
+        let cameraData = []; // Raw data
+        let heatmapPoints = []; // Heatmap data
+        let selectedCameraId = null;
+
+        // --- Logic ---
+
+        async function loadCameras() {
+            try {
+                const res = await fetch('/cameras');
+                cameraData = await res.json();
+                renderSidebarList();
+                cameraData.forEach(cam => renderCameraOnMap(cam));
+            } catch (e) {
+                console.error("Load cameras failed", e);
+            }
+        }
+
+        function renderSidebarList() {
+            const list = document.getElementById('camera-list');
+            list.innerHTML = '';
+            cameraData.forEach(cam => {
+                const div = document.createElement('div');
+                div.className = `camera-item ${selectedCameraId === cam.id ? 'active' : ''}`;
+                div.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <strong>${cam.name || cam.id}</strong>
+                    <span class="status-badge">Active</span>
+                </div>
+                <div style="font-size:0.75rem; color:#888; margin-top:4px;">Source: ${cam.source}</div>
+            `;
+                div.onclick = () => selectCamera(cam);
+                list.appendChild(div);
+            });
+        }
+
+        function selectCamera(cam) {
+            selectedCameraId = cam.id;
+            renderSidebarList();
+
+            // Show settings
+            document.getElementById('camera-settings').style.display = 'block';
+
+            // Populate fields
+            document.getElementById('cam-name').value = cam.name || cam.id;
+            document.getElementById('cam-source').value = cam.source || "0";
+            document.getElementById('cam-angle').value = cam.angle;
+            document.getElementById('angle-display').innerText = Math.round(cam.angle);
+            document.getElementById('cam-fov').value = cam.fov;
+            document.getElementById('fov-display').innerText = Math.round(cam.fov);
+            document.getElementById('cam-height').value = cam.height || 3;
+            document.getElementById('height-display').innerText = cam.height || 3;
+            document.getElementById('cam-tilt').value = cam.tilt || 45;
+            document.getElementById('tilt-display').innerText = cam.tilt || 45;
+
+            // Pan map
+            map.flyTo([cam.lat, cam.lon], 19, { duration: 1.5 });
+        }
+
+        // Live update for sliders
+        document.getElementById('cam-angle').addEventListener('input', (e) => {
+            document.getElementById('angle-display').innerText = e.target.value;
+            if (selectedCameraId) {
+                const cam = cameraData.find(c => c.id === selectedCameraId);
+                if (cam) {
+                    cam.angle = parseFloat(e.target.value);
+                    renderCameraOnMap(cam);
+                }
+            }
+        });
+
+        document.getElementById('cam-fov').addEventListener('input', (e) => {
+            document.getElementById('fov-display').innerText = e.target.value;
+            if (selectedCameraId) {
+                const cam = cameraData.find(c => c.id === selectedCameraId);
+                if (cam) {
+                    cam.fov = parseFloat(e.target.value);
+                    renderCameraOnMap(cam);
+                }
+            }
+        });
+
+        document.getElementById('cam-height').addEventListener('input', (e) => {
+            document.getElementById('height-display').innerText = e.target.value;
+        });
+
+        document.getElementById('cam-tilt').addEventListener('input', (e) => {
+            document.getElementById('tilt-display').innerText = e.target.value;
+        });
+
+        async function saveCameraSettings() {
+            if (!selectedCameraId) return;
+
+            const updates = {
+                name: document.getElementById('cam-name').value,
+                source: document.getElementById('cam-source').value,
+                angle: parseFloat(document.getElementById('cam-angle').value),
+                fov: parseFloat(document.getElementById('cam-fov').value),
+                height: parseFloat(document.getElementById('cam-height').value),
+                tilt: parseFloat(document.getElementById('cam-tilt').value)
+            };
+
+            // Optimistic update
+            const camIndex = cameraData.findIndex(c => c.id === selectedCameraId);
+            if (camIndex !== -1) {
+                cameraData[camIndex] = { ...cameraData[camIndex], ...updates };
+            }
+
+            // Send to backend
+            // First get the full object to merge (or backend handles partial? Our backend replaces.)
+            // We need to send the FULL object because our backend implementation is simple: cameras[id] = camera
+            // So we need lat/lon too.
+            const currentCam = cameraData.find(c => c.id === selectedCameraId);
+
+            await fetch(`/cameras/${selectedCameraId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(currentCam)
+            });
+
+            renderSidebarList();
+            renderCameraOnMap(currentCam);
+            alert("Settings Saved!");
+        }
+
+        function renderCameraOnMap(cam) {
+            // Remove existing
+            if (cameras[cam.id]) map.removeLayer(cameras[cam.id]);
+            if (cameraCones[cam.id]) map.removeLayer(cameraCones[cam.id]);
+
+            // Marker
+            const marker = L.marker([cam.lat, cam.lon], {
+                draggable: true,
+                title: cam.name
+            }).addTo(map);
+
+            marker.on('click', () => selectCamera(cam));
+
+            marker.on('dragend', async function (event) {
+                const pos = marker.getLatLng();
+                cam.lat = pos.lat;
+                cam.lon = pos.lng;
+                // Auto-save position
+                await fetch(`/cameras/${cam.id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(cam)
+                });
+                renderCameraOnMap(cam); // Redraw cone
+            });
+
+            cameras[cam.id] = marker;
+
+            // Cone
+            const cone = createFovCone(cam);
+            cone.addTo(map);
+            cameraCones[cam.id] = cone;
+        }
+
+        function createFovCone(cam) {
+            console.log("Creating Cone for", cam.id, "Angle:", cam.angle);
+            const length = 0.0006; // ~60m
+            // Convert Compass Angle (0=N, 90=E) to Math Angle (0=E, 90=N)
+            // Math = 90 - Compass
+            const angleRad = (90 - cam.angle) * (Math.PI / 180);
+            const fovRad = cam.fov * (Math.PI / 180);
+
+            const center = [cam.lat, cam.lon];
+
+            const leftAngle = angleRad + fovRad / 2; // Math angle increases counter-clockwise
+            const leftPt = [
+                cam.lat + length * Math.sin(leftAngle), // sin gives Y (North) component in math? No.
+                // Wait. Standard Math: x = r cos(theta), y = r sin(theta).
+                // Here we are mapping to Lat/Lon.
+                // Lat is Y (North). Lon is X (East).
+                // So Lat = center.lat + length * sin(theta)
+                // Lon = center.lon + length * cos(theta)
+                // Let's verify:
+                // Theta = 90 (North). sin(90)=1, cos(90)=0. Lat+=len, Lon+=0. Correct.
+                // Theta = 0 (East). sin(0)=0, cos(0)=1. Lat+=0, Lon+=len. Correct.
+
+                // So Lat uses sin, Lon uses cos.
+                cam.lon + length * Math.cos(leftAngle)
+            ];
+
+            const rightAngle = angleRad - fovRad / 2;
+            const rightPt = [
+                cam.lat + length * Math.sin(rightAngle),
+                cam.lon + length * Math.cos(rightAngle)
+            ];
+
+            return L.polygon([center, leftPt, rightPt], {
+                color: '#3b82f6',
+                fillColor: '#3b82f6',
+                fillOpacity: 0.15,
+                weight: 1,
+                dashArray: '5, 5'
+            });
+        }
+
+        async function deleteCamera() {
+            if (!selectedCameraId) return;
+
+            if (!confirm(`Are you sure you want to delete ${selectedCameraId}?`)) return;
+
+            await fetch(`/cameras/${selectedCameraId}`, {
+                method: 'DELETE'
+            });
+
+            // Cleanup map
+            if (cameras[selectedCameraId]) map.removeLayer(cameras[selectedCameraId]);
+            if (cameraCones[selectedCameraId]) map.removeLayer(cameraCones[selectedCameraId]);
+
+            selectedCameraId = null;
+            document.getElementById('camera-settings').style.display = 'none';
+            loadCameras();
+        }
+
+        async function addCameraAtCenter() {
+            const center = map.getCenter();
+            const id = 'cam_' + Math.floor(Math.random() * 10000);
+            const newCam = {
+                id: id,
+                lat: center.lat,
+                lon: center.lng,
+                angle: 0,
+                fov: 60,
+                name: "New Camera",
+                source: "0",
+                height: 3.0,
+                tilt: 15.0
+            };
+
+            await fetch('/cameras', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newCam)
+            });
+
+            loadCameras();
+        }
+
+        // Heatmap Loop
+        async function fetchHeatmap() {
+            if (!apiKey) return;
+            try {
+                const res = await fetch('/heatmap');
+                const data = await res.json();
+                heatmapPoints = data.map(p => [p.lat, p.lon, 1.0]); // Intensity 1.0
+
+                // If in heatmap mode, we can just update data
+                // If in grid mode, we need to re-render
+                const mode = document.getElementById('viz-mode').value;
+                if (mode === 'heatmap' && heatLayer) {
+                    heatLayer.setLatLngs(heatmapPoints);
+                } else {
+                    updateVisualization();
+                }
+            } catch (e) {
+                console.error("Heatmap error", e);
+            }
+        }
+
+        // Init
+        loadCameras();
+        setInterval(fetchHeatmap, 1000);
+
+    </script>
+</body>
+
+</html>

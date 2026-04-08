@@ -1,0 +1,338 @@
+@import url('https://fonts.googleapis.com/css2?family=Laila:wght@700&family=Poppins:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --saffron-500: #f59e0b;
+  --saffron-600: #d97706;
+  --navy-900: #1e3a8a;
+  --card-radius: 1rem;
+
+  /* Font Size Variables */
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 1.875rem;
+}
+
+/* Font Size Classes */
+.font-small {
+  --text-xs: 0.65rem;
+  --text-sm: 0.75rem;
+  --text-base: 0.875rem;
+  --text-lg: 1rem;
+  --text-xl: 1.125rem;
+  --text-2xl: 1.25rem;
+  --text-3xl: 1.5rem;
+}
+
+.font-normal {
+  /* Default values */
+}
+
+.font-large {
+  --text-xs: 0.85rem;
+  --text-sm: 1rem;
+  --text-base: 1.125rem;
+  --text-lg: 1.25rem;
+  --text-xl: 1.5rem;
+  --text-2xl: 1.75rem;
+  --text-3xl: 2.25rem;
+}
+
+/* Apply variables to Tailwind classes override or generic elements */
+body {
+  font-size: var(--text-base);
+}
+
+h1 {
+  font-size: var(--text-3xl) !important;
+}
+
+h2 {
+  font-size: var(--text-2xl) !important;
+}
+
+h3 {
+  font-size: var(--text-xl) !important;
+}
+
+p,
+span,
+div,
+a,
+button {
+  font-size: inherit;
+}
+
+/* Utility class overrides for specific Tailwind classes if needed */
+.text-xs {
+  font-size: var(--text-xs) !important;
+}
+
+.text-sm {
+  font-size: var(--text-sm) !important;
+}
+
+.text-base {
+  font-size: var(--text-base) !important;
+}
+
+.text-lg {
+  font-size: var(--text-lg) !important;
+}
+
+.text-xl {
+  font-size: var(--text-xl) !important;
+}
+
+.text-2xl {
+  font-size: var(--text-2xl) !important;
+}
+
+.text-3xl {
+  font-size: var(--text-3xl) !important;
+}
+
+/* Sidebar Styling */
+.lumine-sidebar {
+  background: white;
+  border-right: 1px solid rgba(0, 0, 0, 0.05);
+  height: 100vh;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 260px;
+  display: flex;
+  flex-direction: column;
+  z-index: 40;
+  overflow-y: auto;
+}
+
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  color: #6b7280;
+  font-weight: 500;
+  text-decoration: none;
+  transition: all 0.2s;
+  font-size: 0.95rem;
+}
+
+.sidebar-link:hover {
+  background-color: #fff7ed;
+  color: #c2410c;
+}
+
+.sidebar-link.active {
+  background-color: var(--navy-900);
+  color: white;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  border-radius: 0.75rem;
+}
+
+/* SOS Special Style */
+.sidebar-link.sos-link {
+  color: #ef4444;
+}
+
+.sidebar-link.sos-link:hover {
+  background-color: #fef2f2;
+  color: #dc2626;
+}
+
+/* Helpers */
+.lumine-card {
+  background: white;
+  border-radius: var(--card-radius);
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  padding: 1.5rem;
+  border: 1px solid #e5e7eb;
+}
+
+.btn {
+  display: inline-flex;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: center;
+  padding: 0.6rem 1.2rem;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s;
+  font-size: 0.9rem;
+}
+
+.btn-primary {
+  background: var(--saffron-600);
+  color: white;
+}
+
+.btn-primary:hover {
+  background: #b45309;
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--navy-900);
+  border: 1px solid rgba(2, 6, 23, 0.08);
+}
+
+.main-content {
+  margin-left: 260px;
+  padding: 2rem;
+  min-height: 100vh;
+}
+
+/* Mobile */
+@media (max-width: 1024px) {
+  .lumine-sidebar {
+    display: none;
+  }
+
+  .main-content {
+    margin-left: 0;
+    padding: 1rem;
+  }
+}
+
+/* Print Styles */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  #digitalIdCard,
+  #digitalIdCard * {
+    visibility: visible;
+  }
+
+  #digitalIdCard {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    max-width: 400px;
+    border: 2px solid #000;
+  }
+}
+
+/* Scrollbar custom */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1;
+  border-radius: 20px;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-out forwards;
+}
+
+/* Slot Booking Styles */
+.lumine-input {
+  width: 100%;
+  padding: 0.8rem;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  background: white;
+  outline: none;
+  transition: all 0.2s;
+  font-size: 0.95rem;
+}
+
+.lumine-input:focus {
+  border-color: #d97706;
+  box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.1);
+}
+
+.lumine-input:disabled {
+  background-color: #f8fafc;
+  cursor: not-allowed;
+}
+
+.loader-spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.step-circle {
+  transition: all 0.3s ease;
+}
+
+.step-active .step-circle {
+  background-color: #d97706;
+  color: white;
+  border-color: #d97706;
+  transform: scale(1.1);
+  box-shadow: 0 4px 10px rgba(217, 119, 6, 0.3);
+}
+
+.step-completed .step-circle {
+  background-color: #16a34a;
+  color: white;
+  border-color: #16a34a;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-up {
+  animation: slideUp 0.4s ease-out forwards;
+}

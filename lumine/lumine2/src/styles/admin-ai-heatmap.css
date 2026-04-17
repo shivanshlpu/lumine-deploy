@@ -1,0 +1,475 @@
+/* ============================================
+   AI Camera Heatmap — Scoped Styles
+   All classes prefixed with ai-heatmap-
+   Uses existing project CSS variables from admin.css
+   ============================================ */
+
+/* Full-screen map container */
+.ai-heatmap-map-wrap {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1;
+}
+
+.ai-heatmap-map-wrap .leaflet-container {
+    height: 100%;
+    width: 100%;
+    background: #e2e8f0;
+}
+
+/* Glassmorphism Sidebar */
+.ai-heatmap-sidebar {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    width: 320px;
+    background: rgba(255, 255, 255, 0.96);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-radius: var(--radius, 12px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    z-index: 1000;
+    max-height: calc(100% - 32px);
+    overflow-y: auto;
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.ai-heatmap-sidebar::-webkit-scrollbar {
+    width: 5px;
+}
+
+.ai-heatmap-sidebar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.ai-heatmap-sidebar::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+}
+
+/* Sidebar header */
+.ai-heatmap-sidebar-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.ai-heatmap-sidebar-header h2 {
+    font-family: 'Laila', serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--navy, #012a4a);
+    margin: 0;
+    line-height: 1.2;
+}
+
+.ai-heatmap-sidebar-header .ai-heatmap-version {
+    font-size: 0.6rem;
+    color: var(--text-muted, #64748b);
+    font-weight: 400;
+    margin-left: 6px;
+}
+
+/* Sidebar toggle button */
+.ai-heatmap-sidebar-toggle {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    z-index: 1001;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(8px);
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    color: var(--navy, #012a4a);
+    transition: all 0.2s;
+}
+
+.ai-heatmap-sidebar-toggle:hover {
+    background: var(--primary-light, #fff7ed);
+    border-color: var(--primary, #d97706);
+    color: var(--primary, #d97706);
+}
+
+/* Control group */
+.ai-heatmap-control-group {
+    padding: 16px 20px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.ai-heatmap-control-group:last-child {
+    border-bottom: none;
+}
+
+.ai-heatmap-control-group h3 {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: var(--text-muted, #64748b);
+    font-weight: 700;
+    margin: 0 0 12px 0;
+}
+
+/* Labels */
+.ai-heatmap-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.8rem;
+    color: #475569;
+    margin-bottom: 6px;
+    font-weight: 500;
+}
+
+.ai-heatmap-label span {
+    font-weight: 600;
+    color: var(--navy, #012a4a);
+}
+
+/* Select Dropdowns */
+.ai-heatmap-select {
+    width: 100%;
+    padding: 9px 12px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    color: var(--navy, #012a4a);
+    font-family: inherit;
+    font-size: 0.82rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: border-color 0.2s;
+    margin-bottom: 10px;
+    appearance: auto;
+}
+
+.ai-heatmap-select:focus {
+    outline: none;
+    border-color: var(--primary, #d97706);
+    box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.1);
+}
+
+/* Text / Number Inputs */
+.ai-heatmap-input {
+    width: 100%;
+    padding: 9px 12px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    color: var(--navy, #012a4a);
+    font-family: inherit;
+    font-size: 0.82rem;
+    box-sizing: border-box;
+    margin-bottom: 10px;
+    transition: border-color 0.2s;
+}
+
+.ai-heatmap-input:focus {
+    outline: none;
+    border-color: var(--primary, #d97706);
+    box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.1);
+}
+
+.ai-heatmap-input::placeholder {
+    color: #94a3b8;
+}
+
+/* Range Sliders */
+.ai-heatmap-range {
+    width: 100%;
+    margin: 6px 0 12px 0;
+    accent-color: var(--primary, #d97706);
+    cursor: pointer;
+    height: 6px;
+}
+
+/* Buttons */
+.ai-heatmap-btn {
+    width: 100%;
+    padding: 10px 16px;
+    border: none;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.ai-heatmap-btn-primary {
+    background: var(--primary, #d97706);
+    color: white;
+}
+
+.ai-heatmap-btn-primary:hover {
+    background: var(--primary-dark, #b45309);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(217, 119, 6, 0.3);
+}
+
+.ai-heatmap-btn-primary:active {
+    transform: scale(0.98);
+}
+
+.ai-heatmap-btn-secondary {
+    background: #f1f5f9;
+    color: var(--navy, #012a4a);
+    border: 1px solid #e2e8f0;
+}
+
+.ai-heatmap-btn-secondary:hover {
+    background: #e2e8f0;
+}
+
+.ai-heatmap-btn-danger {
+    background: #fef2f2;
+    color: var(--red, #ef4444);
+    border: 1px solid #fecaca;
+}
+
+.ai-heatmap-btn-danger:hover {
+    background: var(--red, #ef4444);
+    color: white;
+    border-color: var(--red, #ef4444);
+}
+
+.ai-heatmap-btn-success {
+    background: #ecfdf5;
+    color: var(--green, #10b981);
+    border: 1px solid #a7f3d0;
+}
+
+.ai-heatmap-btn-success:hover {
+    background: var(--green, #10b981);
+    color: white;
+    border-color: var(--green, #10b981);
+}
+
+/* Camera Item Card */
+.ai-heatmap-camera-item {
+    background: #f8fafc;
+    padding: 12px 14px;
+    border-radius: 10px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid transparent;
+}
+
+.ai-heatmap-camera-item:hover {
+    background: var(--primary-light, #fff7ed);
+    border-color: rgba(217, 119, 6, 0.2);
+}
+
+.ai-heatmap-camera-item.active {
+    border-color: var(--primary, #d97706);
+    background: var(--primary-light, #fff7ed);
+    box-shadow: 0 2px 8px rgba(217, 119, 6, 0.12);
+}
+
+.ai-heatmap-camera-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.ai-heatmap-camera-item-header strong {
+    font-size: 0.85rem;
+    color: var(--navy, #012a4a);
+}
+
+.ai-heatmap-camera-status {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    background: rgba(16, 185, 129, 0.15);
+    color: var(--green, #10b981);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.ai-heatmap-camera-source {
+    font-size: 0.72rem;
+    color: var(--text-muted, #64748b);
+    margin-top: 4px;
+}
+
+/* Video Feed Modal */
+.ai-heatmap-modal-overlay {
+    display: flex;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    z-index: 2000;
+    justify-content: center;
+    align-items: center;
+    animation: ai-heatmap-fadeIn 0.2s ease-out;
+}
+
+.ai-heatmap-modal-content {
+    background: white;
+    padding: 24px;
+    border-radius: 16px;
+    max-width: 800px;
+    width: 90%;
+    position: relative;
+    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.2);
+    animation: ai-heatmap-scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.ai-heatmap-modal-close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 50%;
+    color: var(--red, #ef4444);
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.ai-heatmap-modal-close:hover {
+    background: var(--red, #ef4444);
+    color: white;
+    border-color: var(--red, #ef4444);
+}
+
+.ai-heatmap-modal-title {
+    font-family: 'Laila', serif;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--navy, #012a4a);
+    margin: 0 0 16px 0;
+}
+
+.ai-heatmap-feed-img {
+    width: 100%;
+    border-radius: 12px;
+    background: #0f172a;
+    min-height: 300px;
+    object-fit: contain;
+}
+
+/* Stats Badge (floating top-right on map) */
+.ai-heatmap-stats-badge {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    z-index: 1000;
+    background: rgba(255, 255, 255, 0.96);
+    backdrop-filter: blur(12px);
+    border-radius: 12px;
+    padding: 12px 18px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    display: flex;
+    gap: 20px;
+}
+
+.ai-heatmap-stat {
+    text-align: center;
+}
+
+.ai-heatmap-stat-value {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--navy, #012a4a);
+    font-family: 'Laila', serif;
+    line-height: 1;
+}
+
+.ai-heatmap-stat-label {
+    font-size: 0.65rem;
+    color: var(--text-muted, #64748b);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+    margin-top: 2px;
+}
+
+/* Divider */
+.ai-heatmap-btn-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+/* Animations */
+@keyframes ai-heatmap-fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes ai-heatmap-scaleIn {
+    from {
+        transform: scale(0.95);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* Leaflet overrides scoped to AI heatmap */
+.ai-heatmap-map-wrap .leaflet-control-zoom a {
+    border-radius: 8px !important;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important;
+    color: var(--navy, #012a4a) !important;
+    border: 1px solid #e2e8f0 !important;
+    background: rgba(255, 255, 255, 0.95) !important;
+}
+
+.ai-heatmap-map-wrap .leaflet-bar {
+    border: none !important;
+    box-shadow: none !important;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .ai-heatmap-sidebar {
+        width: 280px;
+        left: 8px;
+        top: 8px;
+    }
+    
+    .ai-heatmap-stats-badge {
+        right: 8px;
+        top: 8px;
+        gap: 12px;
+        padding: 8px 12px;
+    }
+}

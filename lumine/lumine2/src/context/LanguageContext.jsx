@@ -47,6 +47,7 @@ export const LanguageProvider = ({ children }) => {
             // Admin
             adminDashboard: "Dashboard",
             adminHeatmap: "Live Heatmap",
+            adminAIHeatmap: "AI Vision",
             adminGuard: "Guard Teams",
             adminLane: "Lane Control",
             adminSettings: "Settings",
@@ -128,6 +129,7 @@ export const LanguageProvider = ({ children }) => {
             // Admin
             adminDashboard: "डैशबोर्ड",
             adminHeatmap: "लाइव हीटमैप",
+            adminAIHeatmap: "AI विज़न",
             adminGuard: "गार्ड टीमें",
             adminLane: "लेन नियंत्रण",
             adminSettings: "सेटिंग्स",
@@ -209,6 +211,7 @@ export const LanguageProvider = ({ children }) => {
             // Admin
             adminDashboard: "ડેશબોર્ડ",
             adminHeatmap: "લાઇવ હીટમેપ",
+            adminAIHeatmap: "AI વિઝન",
             adminGuard: "ગાર્ડ ટીમો",
             adminLane: "લેન નિયંત્રણ",
             adminSettings: "સેટિંગ્સ",

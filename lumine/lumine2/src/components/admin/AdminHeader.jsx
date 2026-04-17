@@ -16,6 +16,7 @@ const AdminHeader = ({ onLogout }) => {
             <div className="nav-pills">
                 <Link to="/admin/dashboard" className={isActive('/admin/dashboard')}>{t('adminDashboard')}</Link>
                 <Link to="/admin/heatmap" className={isActive('/admin/heatmap')}>{t('adminHeatmap')}</Link>
+                <Link to="/admin/ai-heatmap" className={isActive('/admin/ai-heatmap')}>{t('adminAIHeatmap')}</Link>
 
                 <Link to="/admin/lane" className={isActive('/admin/lane')}>{t('adminLane')}</Link>
                 <Link to="#" className="nav-pill">{t('adminSettings')}</Link>

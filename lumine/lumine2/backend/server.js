@@ -329,7 +329,7 @@ const seedDefaultAccounts = async () => {
 
         const counterPass = await hashPassword('12345678');
         await User.findOneAndUpdate(
-            { username: 'counter' },
+            { $or: [{ username: 'counter' }, { email: 'counter@lumine.local' }] },
             {
                 fullName: 'Counter Operator',
                 email: 'counter@lumine.local',

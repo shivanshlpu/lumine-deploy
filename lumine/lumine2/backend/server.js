@@ -1,5 +1,9 @@
-const dns = require('dns');
-dns.setServers(['8.8.8.8', '1.1.1.1']);
+if (process.platform === 'win32') {
+    try {
+        const dns = require('dns');
+        dns.setServers(['8.8.8.8', '1.1.1.1']);
+    } catch (e) {}
+}
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');

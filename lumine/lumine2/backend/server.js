@@ -1286,7 +1286,7 @@ io.on('connection', (socket) => {
 // ─── Global Error Handling & Process Crash Safety ─────────────
 app.use((err, req, res, next) => {
     console.error('⚠️ Global Server Error:', err);
-    res.status(500).json({ error: 'Internal Server Error' });
+    res.status(500).json({ error: err.message || 'Internal Server Error', details: String(err), stack: err.stack });
 });
 
 process.on('uncaughtException', (err) => {

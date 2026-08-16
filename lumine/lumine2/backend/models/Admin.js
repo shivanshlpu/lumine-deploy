@@ -23,8 +23,10 @@ const adminSchema = new mongoose.Schema({
         required: true
     },
     aadhar: {
-        type: String,
-        required: true
+        type: String
+    },
+    aadhaar: {
+        type: String
     },
     role: {
         type: String,

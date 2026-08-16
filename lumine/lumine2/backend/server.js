@@ -354,6 +354,9 @@ app.post('/api/auth/register', async (req, res) => {
         res.json({ success: true, message: 'User registered successfully', user: { fullName, email, role: finalRole } });
     } catch (err) {
         console.error('Registration Error:', err);
+        if (err.code === 11000) {
+            return res.status(400).json({ error: 'User already exists with this email or username.' });
+        }
         res.status(500).json({ error: 'Internal Server Error' });
     }
 });

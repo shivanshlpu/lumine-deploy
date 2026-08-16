@@ -12,7 +12,7 @@ const userSchema = new mongoose.Schema({
     },
     username: {
         type: String,
-        unique: true
+        sparse: true
     },
     password: {
         type: String,
@@ -28,11 +28,11 @@ const userSchema = new mongoose.Schema({
     },
     role: {
         type: String,
-        default: 'admin' // or 'devotee', defaulting to admin as per user request context "admin's register page"
+        default: 'devotee'
     },
     userHash: {
         type: String,
-        unique: true
+        sparse: true
     },
     qrText: {
         type: String

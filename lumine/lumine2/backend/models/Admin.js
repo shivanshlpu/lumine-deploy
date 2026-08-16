@@ -12,7 +12,7 @@ const adminSchema = new mongoose.Schema({
     },
     username: {
         type: String,
-        unique: true
+        sparse: true
     },
     password: {
         type: String,
@@ -28,12 +28,11 @@ const adminSchema = new mongoose.Schema({
     },
     role: {
         type: String,
-        default: 'admin'
+        default: 'mandir_admin'
     },
-    // Blockchain Hash Storage
     adminHash: {
         type: String,
-        unique: true
+        sparse: true
     },
     qrText: {
         type: String

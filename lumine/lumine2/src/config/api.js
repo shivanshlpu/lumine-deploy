@@ -10,7 +10,7 @@ export const getApiBaseUrl = () => {
     }
 
     // 3. Deployed Production Default Fallback (Render Web Service)
-    return 'https://lumine-backend.onrender.com';
+    return 'https://lumine-deploy.onrender.com';
 };
 
 export const API_BASE_URL = getApiBaseUrl();

@@ -1,0 +1,12 @@
+{
+  "builds": [
+    {
+      "src": "lumine/lumine2/package.json",
+      "use": "@vercel/static-build"
+    }
+  ],
+  "routes": [
+    { "handle": "filesystem" },
+    { "src": "/(.*)", "dest": "/index.html" }
+  ]
+}

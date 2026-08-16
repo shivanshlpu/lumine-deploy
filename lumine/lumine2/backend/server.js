@@ -279,10 +279,12 @@ const hashPassword = async (password) => {
 
 const verifyPassword = async (inputPassword, storedPassword) => {
     if (!inputPassword || !storedPassword) return false;
-    if (storedPassword.startsWith('$2a$') || storedPassword.startsWith('$2b$') || storedPassword.startsWith('$2y$')) {
-        return await bcrypt.compare(inputPassword, storedPassword);
+    const strPassword = String(storedPassword);
+    const strInput = String(inputPassword);
+    if (strPassword.startsWith('$2a$') || strPassword.startsWith('$2b$') || strPassword.startsWith('$2y$')) {
+        return await bcrypt.compare(strInput, strPassword);
     }
-    return inputPassword === storedPassword;
+    return strInput === strPassword;
 };
 
 const authenticateToken = (req, res, next) => {
@@ -298,8 +300,58 @@ const authenticateToken = (req, res, next) => {
     });
 };
 
+const seedDefaultAccounts = async () => {
+    try {
+        const adminCount = await Admin.countDocuments();
+        if (adminCount === 0) {
+            const hashedAdminPass = await hashPassword('admin123');
+            const defaultAdmin = new Admin({
+                fullName: 'Somnath Mandir Admin',
+                email: 'admin@lumine.local',
+                username: 'admin',
+                password: hashedAdminPass,
+                phoneNumber: '9999999999',
+                aadhar: '123456789012',
+                role: 'mandir_admin',
+                adminHash: 'default-admin-hash'
+            });
+            await defaultAdmin.save();
+            console.log('🌱 Seeded default Mandir Admin account (admin / admin123)');
+        }
+
+        const defaultStaff = [
+            { fullName: 'Security Officer', email: 'guard@lumine.local', username: 'guard', pass: 'shivansh', phone: '8888888888', aadhaar: '111122223333', role: 'security_guard' },
+            { fullName: 'Parking Manager', email: 'parking@lumine.local', username: 'parking', pass: 'shivansh', phone: '7777777777', aadhaar: '444455556666', role: 'parking' },
+            { fullName: 'Counter Operator', email: 'counter@lumine.local', username: 'counter', pass: 'shivansh', phone: '6666666666', aadhaar: '777788889999', role: 'counter' }
+        ];
+
+        for (const staff of defaultStaff) {
+            const exists = await User.findOne({ username: staff.username });
+            if (!exists) {
+                const hashedPass = await hashPassword(staff.pass);
+                const newUser = new User({
+                    fullName: staff.fullName,
+                    email: staff.email,
+                    username: staff.username,
+                    password: hashedPass,
+                    phoneNumber: staff.phone,
+                    aadhaar: staff.aadhaar,
+                    role: staff.role
+                });
+                await newUser.save();
+                console.log(`🌱 Seeded default ${staff.role} account (${staff.username} / ${staff.pass})`);
+            }
+        }
+    } catch (err) {
+        console.error('⚠️ Account Seeding Error:', err.message);
+    }
+};
+
 mongoose.connect(MONGODB_URI)
-    .then(() => console.log('✅ MongoDB Connected Successfully'))
+    .then(() => {
+        console.log('✅ MongoDB Connected Successfully');
+        seedDefaultAccounts();
+    })
     .catch(err => {
         console.error('❌ MongoDB Connection Error:', err.message);
         process.exit(1);
@@ -465,7 +517,7 @@ app.post('/api/auth/login', async (req, res) => {
         });
     } catch (err) {
         console.error('Login Error:', err);
-        res.status(500).json({ error: 'Internal Server Error' });
+        res.status(500).json({ error: err.message || 'Internal Server Error', details: String(err) });
     }
 });
 

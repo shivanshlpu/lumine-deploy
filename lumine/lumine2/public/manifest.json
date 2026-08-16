@@ -1,13 +1,19 @@
 {
-  "short_name": "Lumine",
-  "name": "Lumine - Temple & Crowd Management System",
-  "description": "Smart Crowd Management, Real-time Slot Booking & Lane Navigation System",
+  "short_name": "LUMINE",
+  "name": "LUMINE - Smart Temple Management",
+  "description": "LUMINE Smart Crowd Management, Real-time Slot Booking & Lane Navigation System",
   "icons": [
     {
-      "src": "/src/assets/logo.png",
-      "type": "image/png",
+      "src": "/somnath-temple.jpg",
+      "type": "image/jpeg",
       "sizes": "192x192 512x512",
       "purpose": "any maskable"
+    },
+    {
+      "src": "/somnath.jpg",
+      "type": "image/jpeg",
+      "sizes": "192x192 512x512",
+      "purpose": "any"
     }
   ],
   "start_url": "/",

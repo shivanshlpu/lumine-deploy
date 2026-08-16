@@ -313,6 +313,25 @@ const calculateStatus = (temp, hum) => {
 };
 
 
+// ─── UptimeRobot & Server Health Check Endpoints ───────────────
+app.get('/api/health', (req, res) => {
+    res.status(200).json({
+        status: 'ok',
+        uptime: process.uptime(),
+        timestamp: new Date().toISOString(),
+        mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+        service: 'Lumine Backend API'
+    });
+});
+
+app.get('/health', (req, res) => {
+    res.status(200).send('OK');
+});
+
+app.get('/ping', (req, res) => {
+    res.status(200).send('pong');
+});
+
 app.get('/', (req, res) => {
     res.send('Lumine Backend is Running');
 });

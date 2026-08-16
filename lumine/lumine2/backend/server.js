@@ -311,10 +311,10 @@ const authenticateToken = (req, res, next) => {
 const seedDefaultAccounts = async () => {
     try {
         const defaultStaff = [
-            { fullName: 'Somnath Mandir Admin', email: 'admin@lumine.local', username: 'admin', pass: 'admin123', phone: '9999999999', aadhaar: '123456789012', role: 'mandir_admin' },
+            { fullName: 'Somnath Mandir Admin', email: 'shivanshti10@gmail.com', username: 'admin', pass: '12345678', phone: '9009149694', aadhaar: '123456789012', role: 'mandir_admin' },
             { fullName: 'Security Officer', email: 'guard@lumine.local', username: 'guard', pass: 'shivansh', phone: '8888888888', aadhaar: '111122223333', role: 'security_guard' },
             { fullName: 'Parking Manager', email: 'parking@lumine.local', username: 'parking', pass: 'shivansh', phone: '7777777777', aadhaar: '444455556666', role: 'parking' },
-            { fullName: 'Counter Operator', email: 'counter@lumine.local', username: 'counter', pass: 'shivansh', phone: '6666666666', aadhaar: '777788889999', role: 'counter' }
+            { fullName: 'Counter Operator', email: 'counter@lumine.local', username: 'counter', pass: '12345678', phone: '9009149694', aadhaar: '777788889999', role: 'counter' }
         ];
 
         for (const staff of defaultStaff) {
@@ -334,19 +334,19 @@ const seedDefaultAccounts = async () => {
             );
         }
 
-        const hashedAdminPass = await hashPassword('admin123');
+        const hashedAdminPass = await hashPassword('12345678');
         await Admin.findOneAndUpdate(
-            { $or: [{ username: 'admin' }, { email: 'admin@lumine.local' }] },
+            { $or: [{ username: 'admin' }, { email: 'shivanshti10@gmail.com' }] },
             {
                 fullName: 'Somnath Mandir Admin',
-                email: 'admin@lumine.local',
+                email: 'shivanshti10@gmail.com',
                 username: 'admin',
                 password: hashedAdminPass,
-                phoneNumber: '9999999999',
+                phoneNumber: '9009149694',
                 aadhar: '123456789012',
                 aadhaar: '123456789012',
                 role: 'mandir_admin',
-                adminHash: 'default-admin-hash'
+                adminHash: 'admin-hash-9009149694'
             },
             { upsert: true, new: true, setDefaultsOnInsert: true }
         );

@@ -234,6 +234,8 @@ const sendBookingEmails = async (bookingData) => {
 
 
 const app = express();
+app.set('trust proxy', 1);
+
 const server = http.createServer(app);
 const io = new Server(server, {
     cors: {
@@ -244,18 +246,20 @@ const io = new Server(server, {
 
 // ─── Rate Limiting & Protection ──────────────────────────────
 const apiLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 200,
+    windowMs: 15 * 60 * 1000,
+    max: 500,
     standardHeaders: true,
     legacyHeaders: false,
+    validate: { trustProxy: false },
     message: { error: 'Too many requests from this IP, please try again after 15 minutes.' }
 });
 
 const authLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 20,
+    windowMs: 15 * 60 * 1000,
+    max: 100,
     standardHeaders: true,
     legacyHeaders: false,
+    validate: { trustProxy: false },
     message: { error: 'Too many authentication attempts. Please try again after 15 minutes.' }
 });
 

@@ -310,9 +310,33 @@ const authenticateToken = (req, res, next) => {
 
 const seedDefaultAccounts = async () => {
     try {
+        const defaultStaff = [
+            { fullName: 'Somnath Mandir Admin', email: 'admin@lumine.local', username: 'admin', pass: 'admin123', phone: '9999999999', aadhaar: '123456789012', role: 'mandir_admin' },
+            { fullName: 'Security Officer', email: 'guard@lumine.local', username: 'guard', pass: 'shivansh', phone: '8888888888', aadhaar: '111122223333', role: 'security_guard' },
+            { fullName: 'Parking Manager', email: 'parking@lumine.local', username: 'parking', pass: 'shivansh', phone: '7777777777', aadhaar: '444455556666', role: 'parking' },
+            { fullName: 'Counter Operator', email: 'counter@lumine.local', username: 'counter', pass: 'shivansh', phone: '6666666666', aadhaar: '777788889999', role: 'counter' }
+        ];
+
+        for (const staff of defaultStaff) {
+            const hashedPass = await hashPassword(staff.pass);
+            await User.findOneAndUpdate(
+                { $or: [{ username: staff.username }, { email: staff.email }] },
+                {
+                    fullName: staff.fullName,
+                    email: staff.email,
+                    username: staff.username,
+                    password: hashedPass,
+                    phoneNumber: staff.phone,
+                    aadhaar: staff.aadhaar,
+                    role: staff.role
+                },
+                { upsert: true, new: true, setDefaultsOnInsert: true }
+            );
+        }
+
         const hashedAdminPass = await hashPassword('admin123');
         await Admin.findOneAndUpdate(
-            { username: 'admin' },
+            { $or: [{ username: 'admin' }, { email: 'admin@lumine.local' }] },
             {
                 fullName: 'Somnath Mandir Admin',
                 email: 'admin@lumine.local',
@@ -327,29 +351,6 @@ const seedDefaultAccounts = async () => {
             { upsert: true, new: true, setDefaultsOnInsert: true }
         );
 
-        const defaultStaff = [
-            { fullName: 'Somnath Mandir Admin', email: 'admin@lumine.local', username: 'admin', pass: 'admin123', phone: '9999999999', aadhaar: '123456789012', role: 'mandir_admin' },
-            { fullName: 'Security Officer', email: 'guard@lumine.local', username: 'guard', pass: 'shivansh', phone: '8888888888', aadhaar: '111122223333', role: 'security_guard' },
-            { fullName: 'Parking Manager', email: 'parking@lumine.local', username: 'parking', pass: 'shivansh', phone: '7777777777', aadhaar: '444455556666', role: 'parking' },
-            { fullName: 'Counter Operator', email: 'counter@lumine.local', username: 'counter', pass: 'shivansh', phone: '6666666666', aadhaar: '777788889999', role: 'counter' }
-        ];
-
-        for (const staff of defaultStaff) {
-            const hashedPass = await hashPassword(staff.pass);
-            await User.findOneAndUpdate(
-                { username: staff.username },
-                {
-                    fullName: staff.fullName,
-                    email: staff.email,
-                    username: staff.username,
-                    password: hashedPass,
-                    phoneNumber: staff.phone,
-                    aadhaar: staff.aadhaar,
-                    role: staff.role
-                },
-                { upsert: true, new: true, setDefaultsOnInsert: true }
-            );
-        }
         console.log('🌱 Default staff and admin accounts seeded & updated successfully');
     } catch (err) {
         console.error('⚠️ Account Seeding Error:', err.message);

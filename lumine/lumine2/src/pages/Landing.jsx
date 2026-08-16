@@ -96,7 +96,11 @@ const Landing = () => {
             }
 
         } catch (error) {
-            setGlobalError(error.message || "Invalid Credentials or Server Offline.");
+            let errorMsg = error.message || "Invalid Credentials or Server Offline.";
+            if (errorMsg.includes('Failed to fetch') || errorMsg.includes('fetch')) {
+                errorMsg = "Connecting to Lumine Server... If the backend is waking up, please wait 15 seconds and click Secure Login again.";
+            }
+            setGlobalError(errorMsg);
             return false;
         } finally {
             setIsLoading(false);

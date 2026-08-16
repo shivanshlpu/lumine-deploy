@@ -55,7 +55,7 @@ const Sidebar = ({ activeTab, onTabChange, isOpen, onClose }) => {
                 {/* Mobile Drawer Header */}
                 <div className="flex lg:hidden items-center justify-between p-4 border-b border-gray-100">
                     <div className="flex items-center gap-2">
-                        <img src="/src/assets/logo.png" alt="Lumine Logo" className="h-8 w-auto" />
+                        <img src="/logo.png" alt="Lumine Logo" className="h-8 w-auto" />
                         <span className="font-bold text-navy-900 font-serif">LUMINE</span>
                     </div>
                     <button

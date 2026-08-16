@@ -4,7 +4,7 @@ const Header = ({ userInitial = 'D', userName = 'Devotee' }) => {
     return (
         <header class="lumine-header">
             <div class="flex items-center gap-3">
-                <img src="/src/assets/logo.png" alt="Lumine Logo" className="h-11 w-auto" />
+                <img src="/logo.png" alt="Lumine Logo" className="h-11 w-auto" />
                 <div>
                     <div class="font-serif font-bold text-navy-900 text-lg leading-none">
                         LUMINE

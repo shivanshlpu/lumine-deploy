@@ -18,7 +18,7 @@ const GovernmentHeader = ({ fontSize, setFontSize }) => {
 
                 {/* Left: Logo & Title */}
                 <div className="flex items-center gap-2 sm:gap-4">
-                    <img src="/src/assets/logo.png" alt="Lumine Logo" className="h-8 w-auto sm:h-10 md:h-12 shrink-0" />
+                    <img src="/logo.png" alt="Lumine Logo" className="h-8 w-auto sm:h-10 md:h-12 shrink-0" />
                     <div className="flex flex-col">
                         <h1 className="text-base sm:text-lg md:text-xl font-bold text-navy-900 leading-tight tracking-tight">
                             LUMINE

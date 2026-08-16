@@ -122,7 +122,7 @@ const Landing = () => {
                     {/* Left Side - Image & Welcome Text */}
                     <div className="relative h-full w-full hidden lg:block overflow-hidden">
                         <img
-                            src="/src/assets/somnath-temple.jpg"
+                            src="/somnath-temple.jpg"
                             alt="Somnath Temple"
                             className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 hover:scale-105"
                         />

@@ -11,7 +11,10 @@ import {
     CreditCard,
     AlertCircle,
     Users,
-    Filter
+    Filter,
+    ShieldCheck,
+    QrCode,
+    CheckCheck,
 } from 'lucide-react';
 import { useTranslation } from '../context/LanguageContext';
 
@@ -26,6 +29,8 @@ const CounterDashboard = () => {
     const [verifyLoading, setVerifyLoading] = useState(false);
     const [verifyError, setVerifyError] = useState('');
     const [verifyingMember, setVerifyingMember] = useState(null);
+    const [verifyAllMode, setVerifyAllMode] = useState(false);
+    const [verifySuccess, setVerifySuccess] = useState('');
 
     // --- Walk-in State ---
     const [walkinForm, setWalkinForm] = useState({
@@ -47,6 +52,8 @@ const CounterDashboard = () => {
     const [userList, setUserList] = useState([]);
     const [loadingUsers, setLoadingUsers] = useState(false);
 
+    const API_BASE = `http://${window.location.hostname}:5000`;
+
     const logout = () => {
         sessionStorage.clear();
         navigate('/');
@@ -64,11 +71,9 @@ const CounterDashboard = () => {
     const fetchUsers = async (type) => {
         setLoadingUsers(true);
         try {
-            const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
-            // Construct URL with query param if type is not 'all'
             const url = type === 'all'
-                ? `${apiUrl}/api/bookings`
-                : `${apiUrl}/api/bookings?type=${type}`;
+                ? `${API_BASE}/api/bookings`
+                : `${API_BASE}/api/bookings?type=${type}`;
 
             const response = await fetch(url);
             const data = await response.json();
@@ -85,15 +90,16 @@ const CounterDashboard = () => {
         }
     };
 
-    const handleSearchBooking = async () => {
-        if (!bookingId) return;
+    const handleSearchBooking = async (overrideId) => {
+        const searchTerm = (overrideId || bookingId).trim();
+        if (!searchTerm) return;
         setVerifyLoading(true);
         setVerifyError('');
         setBookingData(null);
+        setVerifySuccess('');
 
         try {
-            const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
-            const response = await fetch(`${apiUrl}/api/bookings/${bookingId}`);
+            const response = await fetch(`${API_BASE}/api/bookings/${encodeURIComponent(searchTerm)}`);
             const data = await response.json();
 
             if (response.ok) {
@@ -117,8 +123,7 @@ const CounterDashboard = () => {
         }
 
         try {
-            const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
-            const response = await fetch(`${apiUrl}/api/bookings/verify-member`, {
+            const response = await fetch(`${API_BASE}/api/bookings/verify-member`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -131,14 +136,39 @@ const CounterDashboard = () => {
             const data = await response.json();
 
             if (response.ok) {
-                setBookingData(prev => ({
-                    ...prev,
-                    members: prev.members.map(m =>
-                        m._id === verifyingMember._id ? { ...m, cardId: cardIdInput } : m
-                    )
-                }));
-                // Check if verifyingMember is inside userList and update it too if needed, but not strictly required for this view.
+                // Refresh the booking data to show updated status
+                setBookingData(data.booking);
                 setVerifyingMember(null);
+                setVerifySuccess(`✅ ${verifyingMember.name} verified successfully!`);
+                setTimeout(() => setVerifySuccess(''), 4000);
+            } else {
+                alert(data.error || 'Verification failed');
+            }
+        } catch (err) {
+            alert('Server error during verification');
+        }
+    };
+
+    // Verify ALL members with a single Aadhaar + cardId
+    const handleVerifyAll = async (aadhaarInput, cardIdInput) => {
+        try {
+            const response = await fetch(`${API_BASE}/api/bookings/verify-member`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    bookingId: bookingData.bookingId,
+                    aadhaar_full: aadhaarInput,
+                    cardId: cardIdInput,
+                    verifyAll: true
+                })
+            });
+            const data = await response.json();
+
+            if (response.ok) {
+                setBookingData(data.booking);
+                setVerifyAllMode(false);
+                setVerifySuccess(`✅ All ${data.booking.members.length} members verified successfully!`);
+                setTimeout(() => setVerifySuccess(''), 5000);
             } else {
                 alert(data.error || 'Verification failed');
             }
@@ -153,8 +183,7 @@ const CounterDashboard = () => {
         setWalkinSuccess('');
 
         try {
-            const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
-            const response = await fetch(`${apiUrl}/api/bookings/walkin`, {
+            const response = await fetch(`${API_BASE}/api/bookings/walkin`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(walkinForm)
@@ -186,7 +215,6 @@ const CounterDashboard = () => {
     // Filter userList client-side based on search query
     const filteredUserList = userList.filter(user => {
         const lowerQ = searchQuery.toLowerCase();
-        // Search by BookingID or Name of first member
         return (
             user.bookingId?.toLowerCase().includes(lowerQ) ||
             user.members?.[0]?.name?.toLowerCase().includes(lowerQ)
@@ -199,11 +227,16 @@ const CounterDashboard = () => {
         month: 'short',
     });
 
-    return (
-        <div className="bg-sand text-navy-900 font-sans flex min-h-screen">
+    // Count verified/unverified members
+    const verifiedCount = bookingData?.members?.filter(m => m.cardId).length || 0;
+    const totalMembers = bookingData?.members?.length || 0;
+    const allVerified = totalMembers > 0 && verifiedCount === totalMembers;
 
-            {/* --- SIDEBAR --- */}
-            <aside className="w-64 bg-white border-r border-gray-200 flex flex-col flex-shrink-0 z-20 h-full fixed md:relative hidden md:flex">
+    return (
+        <div className="bg-sand text-navy-900 font-sans flex flex-col md:flex-row min-h-screen">
+
+            {/* --- SIDEBAR (Desktop) --- */}
+            <aside className="w-64 bg-white border-r border-gray-200 flex-col flex-shrink-0 z-20 h-full fixed md:relative hidden md:flex">
                 <div className="p-6">
                     <div className="font-serif font-bold text-navy-900 text-xl">LUMINE</div>
                     <div className="text-[10px] text-orange-700 font-bold tracking-widest uppercase">Counter Staff</div>
@@ -231,23 +264,58 @@ const CounterDashboard = () => {
                         className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all group ${activeTab === 'walkin' ? 'bg-navy-900 text-white shadow-lg shadow-navy-900/20' : 'text-gray-500 hover:bg-orange-50 hover:text-orange-700'}`}
                     >
                         <UserPlus className={`w-5 h-5 ${activeTab === 'walkin' ? '' : 'group-hover:scale-110 transition-transform'}`} />
-                        <span>New Registration</span>
+                        <span>Walk-in Registration</span>
                     </button>
+                </nav>
 
-                    <div className="my-4 border-t border-gray-100 mx-2"></div>
-
-                    <button onClick={logout} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-gray-500 hover:bg-red-50 hover:text-red-600 transition-all group text-left">
+                <div className="p-4 border-t border-gray-100">
+                    <button
+                        onClick={logout}
+                        className="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-gray-500 hover:bg-red-50 hover:text-red-600 transition-all group"
+                    >
                         <LogOut className="w-5 h-5 group-hover:scale-110 transition-transform" />
                         <span>Logout</span>
                     </button>
-                </nav>
+                </div>
             </aside>
+
+            {/* --- MOBILE NAVIGATION STRIP --- */}
+            <div className="md:hidden bg-white border-b border-gray-200 p-2 flex items-center justify-around gap-1 sticky top-0 z-30 shadow-xs">
+                <button
+                    onClick={() => setActiveTab('verification')}
+                    className={`flex-1 py-2 px-1 text-[11px] font-bold rounded-lg flex flex-col items-center gap-1 ${activeTab === 'verification' ? 'bg-navy-900 text-white' : 'text-gray-600'}`}
+                >
+                    <LayoutGrid className="w-4 h-4" />
+                    <span>Verify</span>
+                </button>
+                <button
+                    onClick={() => setActiveTab('search')}
+                    className={`flex-1 py-2 px-1 text-[11px] font-bold rounded-lg flex flex-col items-center gap-1 ${activeTab === 'search' ? 'bg-navy-900 text-white' : 'text-gray-600'}`}
+                >
+                    <Users className="w-4 h-4" />
+                    <span>Search</span>
+                </button>
+                <button
+                    onClick={() => setActiveTab('walkin')}
+                    className={`flex-1 py-2 px-1 text-[11px] font-bold rounded-lg flex flex-col items-center gap-1 ${activeTab === 'walkin' ? 'bg-navy-900 text-white' : 'text-gray-600'}`}
+                >
+                    <UserPlus className="w-4 h-4" />
+                    <span>Walk-in</span>
+                </button>
+                <button
+                    onClick={logout}
+                    className="p-2 text-red-600 rounded-lg"
+                    aria-label="Logout"
+                >
+                    <LogOut className="w-4 h-4" />
+                </button>
+            </div>
 
             {/* --- MAIN CONTENT --- */}
             <div className="flex-1 flex flex-col relative w-full">
 
                 {/* --- HEADER --- */}
-                <header className="h-20 bg-white/80 backdrop-blur-md border-b border-gray-200 flex items-center justify-between px-8 flex-shrink-0 z-10 sticky top-0">
+                <header className="h-20 bg-white/80 backdrop-blur-md border-b border-gray-200 flex items-center justify-between px-4 md:px-8 flex-shrink-0 z-10 sticky top-0">
                     <div>
                         <h2 className="font-serif text-2xl font-bold text-navy-800">Counter Dashboard</h2>
                     </div>
@@ -270,44 +338,44 @@ const CounterDashboard = () => {
                     </div>
                 </header>
 
-                <main className="flex-1 p-6 md:p-8 overflow-y-auto">
+                <main className="flex-1 p-3 sm:p-6 md:p-8 overflow-y-auto">
 
                     {/* Welcome Section */}
-                    <div className="mb-8">
-                        <h1 className="text-2xl font-bold text-navy-900 font-serif">
+                    <div className="mb-6 sm:mb-8">
+                        <h1 className="text-xl sm:text-2xl font-bold text-navy-900 font-serif">
                             Namaste!
                         </h1>
-                        <p className="text-gray-500 text-sm mt-1">
+                        <p className="text-gray-500 text-xs sm:text-sm mt-1">
                             {activeTab === 'verification' ? 'Verify incoming devotees details.' :
                                 activeTab === 'walkin' ? 'Register new walk-in devotees.' :
                                     'Search and manage existing bookings.'}
                         </p>
                     </div>
 
-                    <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 min-h-[500px]">
+                    <div className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-gray-100 p-3 sm:p-6 min-h-[500px]">
 
                         {/* --- SEARCH USER CONTENT --- */}
                         {activeTab === 'search' && (
                             <div className="space-y-6">
                                 {/* Search & Filter Controls */}
                                 <div className="flex flex-col md:flex-row gap-4 justify-between items-center">
-                                    {/* Filters */}
-                                    <div className="flex bg-gray-100 p-1 rounded-xl">
+                                    {/* Filters - Scrollable on mobile */}
+                                    <div className="flex bg-gray-100 p-1 rounded-xl w-full md:w-auto overflow-x-auto no-scrollbar shrink-0">
                                         <button
                                             onClick={() => setSearchFilter('all')}
-                                            className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${searchFilter === 'all' ? 'bg-white text-navy-900 shadow-sm' : 'text-gray-500 hover:text-navy-900'}`}
+                                            className={`px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all shrink-0 whitespace-nowrap ${searchFilter === 'all' ? 'bg-white text-navy-900 shadow-xs' : 'text-gray-500 hover:text-navy-900'}`}
                                         >
                                             All Users
                                         </button>
                                         <button
                                             onClick={() => setSearchFilter('online')}
-                                            className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${searchFilter === 'online' ? 'bg-white text-navy-900 shadow-sm' : 'text-gray-500 hover:text-navy-900'}`}
+                                            className={`px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all shrink-0 whitespace-nowrap ${searchFilter === 'online' ? 'bg-white text-navy-900 shadow-xs' : 'text-gray-500 hover:text-navy-900'}`}
                                         >
                                             Slot Booking Used
                                         </button>
                                         <button
                                             onClick={() => setSearchFilter('walkin')}
-                                            className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${searchFilter === 'walkin' ? 'bg-white text-navy-900 shadow-sm' : 'text-gray-500 hover:text-navy-900'}`}
+                                            className={`px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all shrink-0 whitespace-nowrap ${searchFilter === 'walkin' ? 'bg-white text-navy-900 shadow-xs' : 'text-gray-500 hover:text-navy-900'}`}
                                         >
                                             Counter Register Users
                                         </button>
@@ -326,16 +394,16 @@ const CounterDashboard = () => {
                                     </div>
                                 </div>
 
-                                {/* Results Table */}
-                                <div className="border border-gray-200 rounded-2xl overflow-hidden">
-                                    <table className="w-full text-left">
+                                {/* Results Table - Overflow scrollable for mobile */}
+                                <div className="border border-gray-200 rounded-2xl overflow-x-auto no-scrollbar shadow-xs">
+                                    <table className="w-full text-left min-w-[550px]">
                                         <thead className="bg-gray-50 border-b border-gray-200">
                                             <tr>
-                                                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Booking ID</th>
-                                                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Name</th>
-                                                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Type</th>
-                                                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Date / Time</th>
-                                                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">Action</th>
+                                                <th className="px-4 sm:px-6 py-3.5 text-xs font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap">Booking ID</th>
+                                                <th className="px-4 sm:px-6 py-3.5 text-xs font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap">Name</th>
+                                                <th className="px-4 sm:px-6 py-3.5 text-xs font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap">Type</th>
+                                                <th className="px-4 sm:px-6 py-3.5 text-xs font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap">Date / Time</th>
+                                                <th className="px-4 sm:px-6 py-3.5 text-xs font-bold text-gray-500 uppercase tracking-wider text-right whitespace-nowrap">Action</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-gray-100">
@@ -350,31 +418,31 @@ const CounterDashboard = () => {
                                             ) : (
                                                 filteredUserList.map((user) => (
                                                     <tr key={user.bookingId} className="hover:bg-gray-50 transition-colors">
-                                                        <td className="px-6 py-4 text-sm font-mono font-bold text-navy-900">
+                                                        <td className="px-4 sm:px-6 py-4 text-xs sm:text-sm font-mono font-bold text-navy-900 whitespace-nowrap">
                                                             {user.bookingId}
                                                         </td>
-                                                        <td className="px-6 py-4 text-sm text-gray-800">
+                                                        <td className="px-4 sm:px-6 py-4 text-xs sm:text-sm text-gray-800 font-medium whitespace-nowrap">
                                                             {user.members?.[0]?.name || 'N/A'}
                                                         </td>
-                                                        <td className="px-6 py-4">
-                                                            <span className={`px-2 py-1 rounded text-xs font-bold uppercase tracking-wide ${user.timeSlot === 'WALK-IN'
-                                                                    ? 'bg-blue-50 text-blue-700'
-                                                                    : 'bg-orange-50 text-orange-700'
+                                                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
+                                                            <span className={`px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wide inline-block whitespace-nowrap ${user.timeSlot === 'WALK-IN'
+                                                                    ? 'bg-blue-50 text-blue-700 border border-blue-100'
+                                                                    : 'bg-orange-50 text-orange-700 border border-orange-100'
                                                                 }`}>
                                                                 {user.timeSlot === 'WALK-IN' ? 'Counter / Walk-in' : 'Online Slot'}
                                                             </span>
                                                         </td>
-                                                        <td className="px-6 py-4 text-sm text-gray-600">
+                                                        <td className="px-4 sm:px-6 py-4 text-xs sm:text-sm text-gray-600 whitespace-nowrap">
                                                             {user.date} <span className="text-gray-300 mx-1">|</span> {user.timeSlot}
                                                         </td>
-                                                        <td className="px-6 py-4 text-right">
+                                                        <td className="px-4 sm:px-6 py-4 text-right whitespace-nowrap">
                                                             <button
                                                                 onClick={() => {
                                                                     setBookingId(user.bookingId);
                                                                     setActiveTab('verification');
-                                                                    handleSearchBooking(); // Pre-trigger search
+                                                                    setTimeout(() => handleSearchBooking(user.bookingId), 100);
                                                                 }}
-                                                                className="text-navy-900 font-bold text-xs hover:underline"
+                                                                className="text-navy-900 font-bold text-xs hover:underline bg-gray-100 hover:bg-navy-900 hover:text-white px-3 py-1.5 rounded-lg transition-all"
                                                             >
                                                                 View Details
                                                             </button>
@@ -391,26 +459,39 @@ const CounterDashboard = () => {
                         {/* --- SLOT VERIFICATION CONTENT --- */}
                         {activeTab === 'verification' && (
                             <div className="space-y-6 max-w-4xl mx-auto">
-                                <div className="flex gap-4">
-                                    <div className="relative flex-1">
-                                        <Search className="absolute left-4 top-3.5 text-gray-400 w-5 h-5" />
-                                        <input
-                                            type="text"
-                                            placeholder="Enter Booking ID (e.g., BOOK-12345)"
-                                            value={bookingId}
-                                            onChange={(e) => setBookingId(e.target.value)}
-                                            className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-navy-900 focus:border-transparent outline-none transition-all"
-                                        />
+
+                                {/* Search bar with helper text */}
+                                <div>
+                                    <div className="flex gap-4">
+                                        <div className="relative flex-1">
+                                            <Search className="absolute left-4 top-3.5 text-gray-400 w-5 h-5" />
+                                            <input
+                                                type="text"
+                                                placeholder="Enter Booking ID, Aadhaar No., or Scan QR Code"
+                                                value={bookingId}
+                                                onChange={(e) => setBookingId(e.target.value)}
+                                                onKeyDown={(e) => { if (e.key === 'Enter') handleSearchBooking(); }}
+                                                className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-navy-900 focus:border-transparent outline-none transition-all"
+                                            />
+                                        </div>
+                                        <button
+                                            onClick={() => handleSearchBooking()}
+                                            disabled={verifyLoading}
+                                            className="px-8 py-3 bg-navy-900 text-white rounded-xl hover:bg-navy-800 transition-colors disabled:opacity-50 font-medium shadow-lg shadow-navy-900/20"
+                                        >
+                                            {verifyLoading ? 'Searching...' : 'Search'}
+                                        </button>
                                     </div>
-                                    <button
-                                        onClick={handleSearchBooking}
-                                        disabled={verifyLoading}
-                                        className="px-8 py-3 bg-navy-900 text-white rounded-xl hover:bg-navy-800 transition-colors disabled:opacity-50 font-medium shadow-lg shadow-navy-900/20"
-                                    >
-                                        {verifyLoading ? 'Searching...' : 'Search'}
-                                    </button>
+                                    <div className="mt-2 flex items-center gap-4 text-[10px] text-gray-400 uppercase tracking-wider font-bold">
+                                        <span className="flex items-center gap-1"><QrCode className="w-3 h-3" /> Scan QR</span>
+                                        <span className="text-gray-200">|</span>
+                                        <span>Enter Booking ID (BK-XXXXXX)</span>
+                                        <span className="text-gray-200">|</span>
+                                        <span>Enter 12-digit Aadhaar</span>
+                                    </div>
                                 </div>
 
+                                {/* Error message */}
                                 {verifyError && (
                                     <div className="p-4 bg-red-50 text-red-700 rounded-xl flex items-center space-x-2 border border-red-100">
                                         <AlertCircle className="w-5 h-5" />
@@ -418,8 +499,17 @@ const CounterDashboard = () => {
                                     </div>
                                 )}
 
+                                {/* Success message */}
+                                {verifySuccess && (
+                                    <div className="p-4 bg-green-50 text-green-700 rounded-xl flex items-center space-x-2 border border-green-200 animate-fade-in">
+                                        <CheckCircle className="w-5 h-5" />
+                                        <span className="font-bold">{verifySuccess}</span>
+                                    </div>
+                                )}
+
                                 {bookingData && (
                                     <div className="animate-fade-in-up space-y-6">
+                                        {/* Booking Info Header */}
                                         <div className="p-6 bg-orange-50 rounded-2xl border border-orange-100 flex justify-between items-center">
                                             <div>
                                                 <h3 className="text-lg font-bold text-navy-900">{bookingData.temple}</h3>
@@ -428,35 +518,79 @@ const CounterDashboard = () => {
                                                     <span>•</span>
                                                     <span>{bookingData.timeSlot}</span>
                                                 </div>
+                                                <p className="text-xs font-mono text-gray-500 mt-1">Booking: <strong>{bookingData.bookingId}</strong></p>
                                             </div>
-                                            <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold uppercase tracking-wider">
-                                                Active Booking
-                                            </span>
+                                            <div className="text-right">
+                                                {allVerified ? (
+                                                    <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1">
+                                                        <CheckCheck className="w-4 h-4" /> All Verified
+                                                    </span>
+                                                ) : (
+                                                    <span className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-xs font-bold uppercase tracking-wider">
+                                                        {verifiedCount}/{totalMembers} Verified
+                                                    </span>
+                                                )}
+                                            </div>
                                         </div>
 
-                                        <h3 className="text-lg font-bold text-navy-900">Members ({bookingData.members.length})</h3>
+                                        {/* Verify All Button */}
+                                        {!allVerified && totalMembers > 1 && (
+                                            <div className="p-4 bg-blue-50 border border-blue-200 rounded-2xl flex flex-col sm:flex-row justify-between items-center gap-3">
+                                                <div className="flex items-center gap-3">
+                                                    <ShieldCheck className="w-6 h-6 text-blue-600" />
+                                                    <div>
+                                                        <p className="font-bold text-blue-900 text-sm">Quick Group Verification</p>
+                                                        <p className="text-xs text-blue-600">Verify one member's Aadhaar to confirm the entire group ({totalMembers} members)</p>
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    onClick={() => setVerifyAllMode(true)}
+                                                    className="px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition-colors shadow-lg shadow-blue-600/20 flex items-center gap-2 flex-shrink-0"
+                                                >
+                                                    <CheckCheck className="w-4 h-4" />
+                                                    Verify All Members
+                                                </button>
+                                            </div>
+                                        )}
+
+                                        {/* Members List */}
+                                        <h3 className="text-lg font-bold text-navy-900">Members ({totalMembers})</h3>
                                         <div className="grid gap-4">
                                             {bookingData.members.map((member, idx) => (
                                                 <div key={idx} className="flex items-center justify-between p-4 border border-gray-100 rounded-2xl hover:border-gray-300 transition-all bg-white shadow-sm">
                                                     <div className="flex items-center space-x-4">
-                                                        <div className="h-12 w-12 bg-gray-100 rounded-full flex items-center justify-center text-gray-500">
-                                                            <User className="w-6 h-6" />
+                                                        <div className={`h-12 w-12 rounded-full flex items-center justify-center ${member.cardId ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-500'}`}>
+                                                            {member.cardId ? <CheckCircle className="w-6 h-6" /> : <User className="w-6 h-6" />}
                                                         </div>
                                                         <div>
-                                                            <p className="font-bold text-navy-900">{member.name}</p>
-                                                            <div className="text-sm text-gray-500 flex space-x-3">
+                                                            <p className="font-bold text-navy-900">{member.name}
+                                                                {idx === 0 && <span className="ml-2 text-[10px] bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded font-bold uppercase">Primary</span>}
+                                                            </p>
+                                                            <div className="text-sm text-gray-500 flex flex-wrap gap-x-3 gap-y-1">
                                                                 <span>{member.age} Y • {member.gender}</span>
                                                                 <span className="text-gray-300">|</span>
                                                                 <span>Aadhaar: {member.aadhaar_mask || 'N/A'}</span>
+                                                                {member.mobile && (
+                                                                    <>
+                                                                        <span className="text-gray-300">|</span>
+                                                                        <span>📱 {member.mobile}</span>
+                                                                    </>
+                                                                )}
+                                                                {member.email && (
+                                                                    <>
+                                                                        <span className="text-gray-300">|</span>
+                                                                        <span>✉ {member.email}</span>
+                                                                    </>
+                                                                )}
                                                             </div>
                                                         </div>
                                                     </div>
 
-                                                    <div className="flex items-center space-x-4">
+                                                    <div className="flex items-center space-x-4 flex-shrink-0">
                                                         {member.cardId ? (
                                                             <div className="text-right px-4 py-2 bg-green-50 rounded-xl border border-green-100">
-                                                                <span className="block text-[10px] text-green-600 uppercase font-bold tracking-wider">Card Assigned</span>
-                                                                <span className="text-green-700 font-mono font-bold">{member.cardId}</span>
+                                                                <span className="block text-[10px] text-green-600 uppercase font-bold tracking-wider">Verified ✓</span>
+                                                                <span className="text-green-700 font-mono font-bold text-sm">{member.cardId}</span>
                                                             </div>
                                                         ) : (
                                                             <button
@@ -603,8 +737,8 @@ const CounterDashboard = () => {
                 </main>
             </div>
 
-            {/* --- Member Verification Modal --- */}
-            {verifyingMember && (
+            {/* --- Single Member Verification Modal --- */}
+            {verifyingMember && !verifyAllMode && (
                 <div className="fixed inset-0 bg-navy-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
                     <div className="bg-white rounded-3xl w-full max-w-md p-8 shadow-2xl animate-scale-in">
                         <div className="flex justify-between items-center mb-8">
@@ -618,8 +752,8 @@ const CounterDashboard = () => {
                             <div className="p-4 bg-orange-50 rounded-2xl border border-orange-100">
                                 <p className="text-xs text-orange-700 uppercase font-bold tracking-widest mb-1">Authenticating</p>
                                 <p className="text-lg font-bold text-navy-900">{verifyingMember.name}</p>
-                                {verifyingMember.aadhaar_full && (
-                                    <p className="text-sm text-gray-600 font-mono mt-1">Ref: {verifyingMember.aadhaar_full}</p>
+                                {verifyingMember.aadhaar_mask && (
+                                    <p className="text-sm text-gray-600 font-mono mt-1">Aadhaar: {verifyingMember.aadhaar_mask}</p>
                                 )}
                             </div>
 
@@ -664,7 +798,88 @@ const CounterDashboard = () => {
                                     type="submit"
                                     className="w-full mt-8 bg-navy-900 text-white py-4 rounded-xl font-bold hover:bg-navy-800 transition-colors shadow-lg shadow-navy-900/20"
                                 >
-                                    Confirm & Assign Data
+                                    Confirm & Assign Card
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* --- Verify ALL Members Modal --- */}
+            {verifyAllMode && (
+                <div className="fixed inset-0 bg-navy-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+                    <div className="bg-white rounded-3xl w-full max-w-lg p-8 shadow-2xl animate-scale-in">
+                        <div className="flex justify-between items-center mb-6">
+                            <h3 className="text-xl font-bold font-serif text-navy-900">Verify All Members</h3>
+                            <button onClick={() => setVerifyAllMode(false)} className="text-gray-400 hover:text-gray-600 transition-colors">
+                                <span className="text-2xl">&times;</span>
+                            </button>
+                        </div>
+
+                        <div className="space-y-6">
+                            {/* Show all members that will be verified */}
+                            <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4">
+                                <p className="text-xs font-bold text-blue-800 uppercase tracking-wider mb-3">
+                                    {totalMembers} Members Will Be Verified
+                                </p>
+                                <div className="space-y-2">
+                                    {bookingData?.members?.map((m, idx) => (
+                                        <div key={idx} className="flex items-center gap-3 text-sm">
+                                            <span className="w-6 h-6 bg-blue-200 text-blue-800 rounded-full flex items-center justify-center text-xs font-bold">{idx + 1}</span>
+                                            <span className="font-medium text-navy-900">{m.name}</span>
+                                            <span className="text-gray-400 text-xs">{m.age}Y • {m.gender}</span>
+                                            {m.cardId && <span className="text-green-600 text-xs font-bold">(Already Verified)</span>}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                                <p className="text-xs text-amber-800"><strong>How it works:</strong> Enter ANY one member's Aadhaar number to verify the entire group at once. All {totalMembers} members will be marked as verified.</p>
+                            </div>
+
+                            <form onSubmit={(e) => {
+                                e.preventDefault();
+                                const formData = new FormData(e.target);
+                                handleVerifyAll(
+                                    formData.get('aadhaar'),
+                                    formData.get('cardId')
+                                );
+                            }}>
+                                <div className="space-y-4">
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-bold text-navy-900">Any Member's Aadhaar Number</label>
+                                        <input
+                                            name="aadhaar"
+                                            required
+                                            type="text"
+                                            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                                            placeholder="Enter 12-digit Aadhaar of any member"
+                                            autoFocus
+                                        />
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-bold text-navy-900">Primary Card ID (Optional)</label>
+                                        <div className="relative">
+                                            <CreditCard className="absolute left-4 top-3.5 text-gray-400 w-5 h-5" />
+                                            <input
+                                                name="cardId"
+                                                type="text"
+                                                className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-mono"
+                                                placeholder="Scan primary card (optional)"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <button
+                                    type="submit"
+                                    className="w-full mt-8 bg-blue-600 text-white py-4 rounded-xl font-bold hover:bg-blue-700 transition-colors shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2"
+                                >
+                                    <CheckCheck className="w-5 h-5" />
+                                    Verify All {totalMembers} Members
                                 </button>
                             </form>
                         </div>

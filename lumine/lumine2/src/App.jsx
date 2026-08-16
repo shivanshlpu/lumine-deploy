@@ -32,7 +32,7 @@ function App() {
 
             {/* Devotee Dashboard Routes */}
             <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/dashboard/slot-booking" element={<SlotBooking />} />
+            <Route path="/dashboard/slot-booking" element={<Navigate to="/dashboard?tab=slot-booking" replace />} />
             <Route path="/dashboard/my-visits" element={<MyVisits />} />
             <Route path="/dashboard/support" element={<Support />} />
             <Route path="/dashboard/admin-notices" element={<AdminNotices />} />

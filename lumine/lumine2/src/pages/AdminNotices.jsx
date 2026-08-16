@@ -1,15 +1,69 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { io } from 'socket.io-client';
 import Sidebar from '../components/Sidebar';
+import { Car, MapPin, Clock, Menu } from 'lucide-react';
+
+const API_BASE = `http://${window.location.hostname}:5000`;
 
 const AdminNotices = () => {
-    return (
-        <div className="bg-sand text-navy-900 font-sans flex min-h-screen">
-            <Sidebar />
+    const [parkingNotice, setParkingNotice] = useState(null);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-            <div className="flex-1 flex flex-col relative">
-                <header className="h-20 bg-white/80 backdrop-blur-md border-b border-gray-200 flex items-center justify-between px-8 flex-shrink-0 z-10 sticky top-0">
-                    <div>
-                        <h2 className="font-serif text-2xl font-bold text-navy-800">Admin Notices & Updates</h2>
+    // Fetch latest parking notice on mount
+    useEffect(() => {
+        const fetchNotice = async () => {
+            try {
+                const resp = await fetch(`${API_BASE}/api/parking/notices/latest`);
+                const data = await resp.json();
+                if (data && data.noticeId) setParkingNotice(data);
+            } catch (err) {
+                console.error('Failed to fetch parking notice:', err);
+            }
+        };
+        fetchNotice();
+
+        // Listen for real-time parking notice updates
+        const socket = io(API_BASE);
+        socket.on('parking-notice', (notice) => {
+            if (notice && notice.noticeId) setParkingNotice(notice);
+        });
+
+        return () => socket.disconnect();
+    }, []);
+
+    const getNoticeStatusColor = (status) => {
+        switch (status) {
+            case 'full': return 'bg-red-100 text-red-700 border-red-200';
+            case 'almost_full': return 'bg-orange-100 text-orange-700 border-orange-200';
+            case 'filling': return 'bg-yellow-100 text-yellow-700 border-yellow-200';
+            default: return 'bg-green-100 text-green-700 border-green-200';
+        }
+    };
+
+    const getNoticeStatusText = (status) => {
+        switch (status) {
+            case 'full': return 'FULL';
+            case 'almost_full': return 'Almost Full';
+            case 'filling': return 'Filling';
+            default: return 'Available';
+        }
+    };
+
+    return (
+        <div className="bg-sand text-navy-900 font-sans flex min-h-screen relative">
+            <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+
+            <div className="flex-1 flex flex-col min-w-0 relative">
+                <header className="h-16 sm:h-20 bg-white/90 backdrop-blur-md border-b border-gray-200 flex items-center justify-between px-4 sm:px-8 flex-shrink-0 z-10 sticky top-0">
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={() => setIsSidebarOpen(true)}
+                            className="lg:hidden p-2 rounded-xl text-gray-700 hover:bg-gray-100 transition-colors"
+                            aria-label="Open menu"
+                        >
+                            <Menu className="w-6 h-6" />
+                        </button>
+                        <h2 className="font-serif text-lg sm:text-2xl font-bold text-navy-800 truncate">Admin Notices & Updates</h2>
                     </div>
                 </header>
 
@@ -150,6 +204,76 @@ const AdminNotices = () => {
                         </div>
 
                     </div>
+
+                    {/* ───── Parking Availability Section (from admin notice) ───── */}
+                    {parkingNotice && (
+                        <div className="mt-8 animate-fade-in">
+                            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
+                                <div className="flex items-start justify-between mb-6">
+                                    <div>
+                                        <h3 className="text-xl font-bold font-serif text-navy-900 flex items-center gap-2">
+                                            <Car className="w-6 h-6 text-orange-600" />
+                                            🅿️ Parking Availability
+                                        </h3>
+                                        <p className="text-sm text-gray-500 mt-1">{parkingNotice.title}</p>
+                                    </div>
+                                    <div className="text-right flex-shrink-0">
+                                        <div className="flex items-center gap-1 text-xs text-gray-400">
+                                            <Clock className="w-3 h-3" />
+                                            {new Date(parkingNotice.publishedAt).toLocaleString()}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {parkingNotice.message && (
+                                    <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 mb-6">
+                                        <p className="text-sm text-blue-800">{parkingNotice.message}</p>
+                                    </div>
+                                )}
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                    {parkingNotice.zones && parkingNotice.zones.map((zone) => {
+                                        const isRecommended = parkingNotice.zones.reduce((best, z) =>
+                                            z.available > (best?.available || 0) ? z : best, null
+                                        )?.zoneId === zone.zoneId;
+
+                                        return (
+                                            <div
+                                                key={zone.zoneId}
+                                                className={`relative rounded-xl p-5 border transition-all ${isRecommended ? 'border-orange-300 bg-orange-50 ring-2 ring-orange-200' : 'border-gray-200 bg-gray-50'}`}
+                                            >
+                                                {isRecommended && (
+                                                    <span className="absolute -top-2 right-3 bg-orange-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide">Recommended</span>
+                                                )}
+                                                <div className="flex items-center gap-2 mb-3">
+                                                    <MapPin className="w-4 h-4 text-gray-500" />
+                                                    <span className="font-bold text-navy-900 text-sm">{zone.name}</span>
+                                                </div>
+                                                <div className="text-center mb-3">
+                                                    <p className={`text-3xl font-black ${zone.available < 10 ? 'text-red-500' : 'text-green-600'}`}>
+                                                        {zone.available}
+                                                    </p>
+                                                    <p className="text-[10px] font-bold text-gray-400 uppercase">Slots Available</p>
+                                                </div>
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-xs text-gray-500">{zone.distance}</span>
+                                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${getNoticeStatusColor(zone.status)}`}>
+                                                        {getNoticeStatusText(zone.status)}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+
+                                <div className="mt-4 text-center">
+                                    <p className="text-[10px] text-gray-400 uppercase tracking-wider">
+                                        Published by Parking Administration • Updated via ALPR Camera System
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </main>
             </div>
         </div>

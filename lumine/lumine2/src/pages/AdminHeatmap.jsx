@@ -15,11 +15,13 @@ const AdminHeatmap = () => {
     const [selectedLane, setSelectedLane] = useState(null);
     const [showToast, setShowToast] = useState(false);
 
+    const API_BASE = `http://${window.location.hostname}:5000`;
+
     useEffect(() => {
         // 1. Initial Fetch
         const fetchLanes = async () => {
             try {
-                const response = await fetch('http://localhost:5000/api/lanes');
+                const response = await fetch(`${API_BASE}/api/lanes`);
                 const data = await response.json();
                 setLanesData(data);
             } catch (error) {
@@ -30,7 +32,7 @@ const AdminHeatmap = () => {
         fetchLanes();
 
         // 2. Socket Connection
-        const socket = io('http://localhost:5000');
+        const socket = io(API_BASE);
 
         socket.on('connect', () => {
             console.log('✅ Connected to WebSocket');
@@ -62,7 +64,7 @@ const AdminHeatmap = () => {
     };
 
     return (
-        <div className="bg-lumine-bg text-gray-800 overflow-hidden h-screen flex flex-col">
+        <div className="bg-sand text-navy-900 min-h-screen flex flex-col relative overflow-x-hidden">
             <AdminHeader onLogout={handleLogout} />
 
             <div className="relative w-full flex-1 flex flex-col">
@@ -73,9 +75,12 @@ const AdminHeatmap = () => {
                     setShowCameras={setShowCameras}
                 />
 
-                <div className="flex-1 bg-gray-100 relative z-0">
-                    {/* Render the new MapDashboard */}
-                    <MapDashboard lanes={lanesData} />
+                <div className="flex-1 bg-gray-100 relative z-0 min-h-[400px]">
+                    <MapDashboard
+                        lanes={lanesData}
+                        showHeatmap={showHeatmap}
+                        className="h-[400px] sm:h-[550px] lg:h-full w-full"
+                    />
                 </div>
 
                 <DetailsPanel
@@ -95,4 +100,3 @@ const AdminHeatmap = () => {
 };
 
 export default AdminHeatmap;
-

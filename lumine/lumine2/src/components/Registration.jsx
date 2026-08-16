@@ -1,8 +1,7 @@
 import React, { useState } from "react";
 import { useTranslation } from "../context/LanguageContext";
-import { registerUser } from "../services/firebaseAuth";
 
-function Registration({ onBackToLogin, onRegistrationSuccess }) {
+function Registration({ onBackToLogin, onRegistrationSuccess, role = "devotee" }) {
     const { t, language: currentLang } = useTranslation();
     const [formData, setFormData] = useState({
         fullName: "",
@@ -71,18 +70,25 @@ function Registration({ onBackToLogin, onRegistrationSuccess }) {
         setGlobalError("");
 
         try {
-            console.log("Starting registration with Firebase...");
-
-            // Register via Firebase
-            const result = await registerUser(
-                formData.email.trim(),
-                formData.password,
-                formData.fullName.trim(),
-                formData.phoneNumber.trim(),
-                "devotee"
-            );
-
-            console.log("Registration successful:", result);
+            console.log("Starting registration with Lumine Backend API...");
+            
+            const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+            const response = await fetch(`${apiUrl}/api/auth/register`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    fullName: formData.fullName.trim(),
+                    email: formData.email.trim(),
+                    password: formData.password,
+                    phoneNumber: formData.phoneNumber.trim(),
+                    role: role
+                }),
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error || "Registration failed");
+            
+            const result = { user: data.user };
+            console.log("Registration successful against database:", result);
 
 
             // Save user data to localStorage

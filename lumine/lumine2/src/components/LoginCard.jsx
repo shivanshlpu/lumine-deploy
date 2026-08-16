@@ -159,7 +159,11 @@ const LoginCard = ({ currentRole, onRoleChange, onLogin, isLoading, globalError,
                 <p className="text-xs text-gray-500">
                     <span data-key="newHere">{t('newHere')}</span>{' '}
                     <button onClick={onRegister} className="font-medium text-saffron-600 hover:text-saffron-500" data-key="registerLink">
-                        {currentRole === 'mandir_admin' ? 'Register as Admin' : t('registerLink')}
+                        {currentRole === 'mandir_admin' ? 'Register as Admin' : 
+                         currentRole === 'security_guard' ? 'Register as Guard' :
+                         currentRole === 'counter' ? 'Register as Counter Staff' :
+                         currentRole === 'parking' ? 'Register as Parking Staff' : 
+                         t('registerLink')}
                     </button>
                 </p>
             </div>

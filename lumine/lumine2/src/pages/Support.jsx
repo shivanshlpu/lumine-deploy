@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import Sidebar from '../components/Sidebar';
 import { useTranslation } from '../context/LanguageContext';
+import { Menu } from 'lucide-react';
 
 const Support = () => {
     useTranslation();
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [formData, setFormData] = useState({
         name: '',
         email: '',
@@ -21,17 +23,24 @@ const Support = () => {
     };
 
     return (
-        <div className="bg-sand text-navy-900 font-sans flex min-h-screen">
-            <Sidebar />
+        <div className="bg-sand text-navy-900 font-sans flex min-h-screen relative">
+            <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
 
-            <div className="flex-1 flex flex-col relative">
-                <header className="h-20 bg-white/80 backdrop-blur-md border-b border-gray-200 flex items-center justify-between px-8 flex-shrink-0 z-10 sticky top-0">
-                    <div>
-                        <h2 className="font-serif text-2xl font-bold text-navy-800">Support & Helpdesk</h2>
+            <div className="flex-1 flex flex-col min-w-0 relative">
+                <header className="h-16 sm:h-20 bg-white/90 backdrop-blur-md border-b border-gray-200 flex items-center justify-between px-4 sm:px-8 flex-shrink-0 z-10 sticky top-0">
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={() => setIsSidebarOpen(true)}
+                            className="lg:hidden p-2 rounded-xl text-gray-700 hover:bg-gray-100 transition-colors"
+                            aria-label="Open menu"
+                        >
+                            <Menu className="w-6 h-6" />
+                        </button>
+                        <h2 className="font-serif text-lg sm:text-2xl font-bold text-navy-800 truncate">Support & Helpdesk</h2>
                     </div>
                 </header>
 
-                <main className="flex-1 p-8 overflow-y-auto">
+                <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
 
                         {/* Left Column: Contact & Notice Board */}

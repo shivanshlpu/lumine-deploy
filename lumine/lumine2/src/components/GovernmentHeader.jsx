@@ -8,37 +8,34 @@ const GovernmentHeader = ({ fontSize, setFontSize }) => {
         setFontSize(size);
     };
 
-
-
     return (
         <div className="w-full font-sans">
             {/* Top Government Strip */}
             <div className="h-1.5 w-full bg-gradient-to-r from-orange-500 via-white to-green-600"></div>
 
             {/* Main Header Content */}
-            <div className="bg-white border-b border-gray-200 px-4 py-2 md:px-8 flex items-center justify-between shadow-sm">
+            <div className="bg-white border-b border-gray-200 px-3 py-2 sm:px-6 flex items-center justify-between shadow-xs flex-wrap gap-2">
 
                 {/* Left: Logo & Title */}
-                <div className="flex items-center gap-4">
-                    <img src="/src/assets/logo.png" alt="Lumine Logo" className="h-10 w-auto md:h-12" />
+                <div className="flex items-center gap-2 sm:gap-4">
+                    <img src="/src/assets/logo.png" alt="Lumine Logo" className="h-8 w-auto sm:h-10 md:h-12 shrink-0" />
                     <div className="flex flex-col">
-                        <h1 className="text-lg md:text-xl font-bold text-navy-900 leading-tight tracking-tight">
+                        <h1 className="text-base sm:text-lg md:text-xl font-bold text-navy-900 leading-tight tracking-tight">
                             LUMINE
                         </h1>
-                        <span className="text-[10px] md:text-xs text-gray-600 font-medium uppercase tracking-wider">
-                            {language === 'en' ? 'Temple Management System' : 'मंदिर प्रबंधन प्रणाली'}
+                        <span className="text-[9px] sm:text-[10px] md:text-xs text-gray-600 font-medium uppercase tracking-wider">
+                            {language === 'en' ? 'Temple Management' : 'मंदिर प्रबंधन'}
                         </span>
                     </div>
                 </div>
 
                 {/* Right: Controls */}
-                <div className="flex items-center gap-4 md:gap-6">
-
+                <div className="flex items-center gap-2 sm:gap-4">
                     {/* Text Size Controls */}
-                    <div className="hidden md:flex items-center border border-gray-300 rounded overflow-hidden bg-gray-50">
+                    <div className="hidden sm:flex items-center border border-gray-300 rounded-lg overflow-hidden bg-gray-50">
                         <button
                             onClick={() => handleFontSizeChange('small')}
-                            className={`px-3 py-1 text-xs font-bold hover:bg-gray-200 transition-colors ${fontSize === 'small' ? 'bg-gray-200 text-black' : 'text-gray-600'}`}
+                            className={`px-2 py-1 text-xs font-bold hover:bg-gray-200 transition-colors ${fontSize === 'small' ? 'bg-gray-200 text-black' : 'text-gray-600'}`}
                             aria-label="Decrease font size"
                         >
                             A-
@@ -46,7 +43,7 @@ const GovernmentHeader = ({ fontSize, setFontSize }) => {
                         <div className="w-px h-4 bg-gray-300"></div>
                         <button
                             onClick={() => handleFontSizeChange('normal')}
-                            className={`px-3 py-1 text-xs font-bold hover:bg-gray-200 transition-colors ${fontSize === 'normal' ? 'bg-gray-200 text-black' : 'text-gray-600'}`}
+                            className={`px-2 py-1 text-xs font-bold hover:bg-gray-200 transition-colors ${fontSize === 'normal' ? 'bg-gray-200 text-black' : 'text-gray-600'}`}
                             aria-label="Reset font size"
                         >
                             A
@@ -54,7 +51,7 @@ const GovernmentHeader = ({ fontSize, setFontSize }) => {
                         <div className="w-px h-4 bg-gray-300"></div>
                         <button
                             onClick={() => handleFontSizeChange('large')}
-                            className={`px-3 py-1 text-xs font-bold hover:bg-gray-200 transition-colors ${fontSize === 'large' ? 'bg-gray-200 text-black' : 'text-gray-600'}`}
+                            className={`px-2 py-1 text-xs font-bold hover:bg-gray-200 transition-colors ${fontSize === 'large' ? 'bg-gray-200 text-black' : 'text-gray-600'}`}
                             aria-label="Increase font size"
                         >
                             A+
@@ -62,14 +59,14 @@ const GovernmentHeader = ({ fontSize, setFontSize }) => {
                     </div>
 
                     {/* Language Toggle */}
-                    <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1 border border-gray-200">
+                    <div className="flex items-center gap-0.5 bg-gray-100 rounded-lg p-0.5 border border-gray-200">
                         {['en', 'hi', 'gu'].map((lang) => (
                             <button
                                 key={lang}
                                 onClick={() => setLanguage(lang)}
-                                className={`px-3 py-1 rounded-md text-xs font-bold transition-all ${language === lang
-                                    ? 'bg-white text-orange-700 shadow-sm ring-1 ring-black/5'
-                                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200'
+                                className={`px-2 py-1 sm:px-3 rounded-md text-[11px] sm:text-xs font-bold transition-all ${language === lang
+                                    ? 'bg-white text-orange-700 shadow-xs ring-1 ring-black/5'
+                                    : 'text-gray-500 hover:text-gray-700'
                                     }`}
                             >
                                 {lang.toUpperCase()}

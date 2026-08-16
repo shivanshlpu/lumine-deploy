@@ -31,6 +31,7 @@ const AdminDashboard = () => {
     const [highlightedGuardId] = useState(null);
     const [toast, setToast] = useState({ show: false, message: '' });
     const [isAddTeamModalOpen, setIsAddTeamModalOpen] = useState(false);
+    const [stats, setStats] = useState({ headCount: 0, slotBooking: 0, counterUser: 0 });
     const mapInstanceRef = useRef(null);
 
     // Dynamic API URL for cross-device support
@@ -60,11 +61,22 @@ const AdminDashboard = () => {
                 .catch(err => console.error('Error fetching alerts:', err));
         };
 
+        const fetchStats = () => {
+            fetch(`${API_BASE_URL}/api/dashboard/stats`)
+                .then(res => res.json())
+                .then(data => setStats(data))
+                .catch(err => console.error('Error fetching stats:', err));
+        };
+
         // Initial Fetch
         fetchAlerts();
+        fetchStats();
 
         // Polling Interval (5 seconds)
-        const intervalId = setInterval(fetchAlerts, 5000);
+        const intervalId = setInterval(() => {
+            fetchAlerts();
+            fetchStats();
+        }, 5000);
 
         // Fetch specific Main Gate initial status
         fetch(`${API_BASE_URL}/api/lane-status`)
@@ -84,6 +96,8 @@ const AdminDashboard = () => {
             if (['2', '3', '4'].includes(String(updatedLane.laneId))) {
                 console.log('📡 Main Gate Update:', updatedLane);
             }
+            // Trigger an immediate update to the live stat counters
+            fetchStats();
         });
 
         socket.on('alert', (newAlert) => {
@@ -231,12 +245,15 @@ const AdminDashboard = () => {
     };
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden', backgroundColor: 'var(--bg-body)' }}>
+        <div className="admin-wrapper flex flex-col min-h-screen bg-sand text-navy-900 overflow-x-hidden">
             <AdminHeader onLogout={handleLogout} />
 
 
 
-            <StatsBar activeAlertsCount={alerts.filter(a => a.status !== 'resolved').length} />
+            <StatsBar 
+                activeAlertsCount={alerts.filter(a => a.status !== 'resolved').length} 
+                stats={stats} 
+            />
 
             <main className="main-layout">
                 <HeatmapPanel />

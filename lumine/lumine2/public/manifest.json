@@ -1,0 +1,19 @@
+{
+  "short_name": "Lumine",
+  "name": "Lumine - Temple & Crowd Management System",
+  "description": "Smart Crowd Management, Real-time Slot Booking & Lane Navigation System",
+  "icons": [
+    {
+      "src": "/src/assets/logo.png",
+      "type": "image/png",
+      "sizes": "192x192 512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#FFFFFF",
+  "theme_color": "#C2410C",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "categories": ["utilities", "government", "travel"]
+}

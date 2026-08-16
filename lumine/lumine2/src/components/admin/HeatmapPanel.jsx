@@ -40,7 +40,7 @@ const HeatmapPanel = () => {
                 <span className="panel-title">Real-Time Heatmap View</span>
                 <span className="badge badge-live">LIVE FEED</span>
             </div>
-            <div className="flex-1 min-h-0 relative p-2">
+            <div className="h-[350px] lg:h-full w-full relative p-2">
                 <MapDashboard lanes={lanes} className="h-full w-full" />
             </div>
         </div>

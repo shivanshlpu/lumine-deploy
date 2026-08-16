@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import GovernmentHeader from './GovernmentHeader';
+import PWAInstallBanner from './PWAInstallBanner';
 
 const Layout = ({ children }) => {
     const [fontSize, setFontSize] = useState('normal');
@@ -27,6 +28,7 @@ const Layout = ({ children }) => {
             <div className="flex-1 flex flex-col relative">
                 {children}
             </div>
+            <PWAInstallBanner />
         </div>
     );
 };

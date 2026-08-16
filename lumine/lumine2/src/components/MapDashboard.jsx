@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { MapContainer, TileLayer, CircleMarker, Popup, LayersControl, Marker, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -8,7 +8,6 @@ import 'leaflet.heat';
 const CENTER_POSITION = [20.8880, 70.4010];
 
 // Lane Paths (Single Device Points)
-// Adapted for numeric IDs 1-8
 const LANE_PATHS = {
     1: [20.8882, 70.4012], // Lane 1 (Queue Area)
     2: [20.8880, 70.4010], // Lane 2 (Main Gate - Hardware Linked)
@@ -20,10 +19,22 @@ const LANE_PATHS = {
     8: [20.8890, 70.4012]  // Lane 8
 };
 
+// Leaflet resize handler to prevent white map rendering issues
+const MapResizeHandler = () => {
+    const map = useMap();
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            map.invalidateSize();
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [map]);
+    return null;
+};
+
 const HeatmapLayer = ({ points }) => {
     const map = useMap();
 
-    React.useEffect(() => {
+    useEffect(() => {
         if (!points || points.length === 0) return;
 
         const heat = L.heatLayer(points, {
@@ -41,7 +52,7 @@ const HeatmapLayer = ({ points }) => {
     return null;
 };
 
-const MapDashboard = ({ lanes, className = "h-[600px] w-full", showHeatmap = false }) => {
+const MapDashboard = ({ lanes, className = "h-[350px] lg:h-[400px] w-full", showHeatmap = false }) => {
     const getLaneColor = (lane) => {
         if (lane.status === 'RED') return '#E53E3E'; // Red
         if (lane.status === 'YELLOW') return '#D69E2E'; // Yellow
@@ -61,14 +72,16 @@ const MapDashboard = ({ lanes, className = "h-[600px] w-full", showHeatmap = fal
     });
 
     return (
-        <div className={`${className} rounded-xl overflow-hidden border-2 border-border shadow-lg relative z-0`}>
+        <div className={`${className} rounded-xl overflow-hidden border-2 border-border shadow-lg relative z-0 min-h-[350px]`}>
             <MapContainer
                 center={CENTER_POSITION}
                 zoom={19}
-                maxZoom={22} // Allow very close zoom
+                maxZoom={22}
                 scrollWheelZoom={true}
-                style={{ height: '100%', width: '100%' }}
+                style={{ height: '100%', width: '100%', minHeight: '350px' }}
             >
+                <MapResizeHandler />
+
                 <LayersControl position="topright">
                     <LayersControl.BaseLayer checked name="Standard">
                         <TileLayer
@@ -81,7 +94,7 @@ const MapDashboard = ({ lanes, className = "h-[600px] w-full", showHeatmap = fal
                     <LayersControl.BaseLayer name="Satellite">
                         <TileLayer
                             attribution='Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
-                            url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+                            url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{y}/{x}"
                             maxNativeZoom={19}
                             maxZoom={22}
                         />
@@ -94,8 +107,6 @@ const MapDashboard = ({ lanes, className = "h-[600px] w-full", showHeatmap = fal
                             .filter(l => (l.location || LANE_PATHS[l.laneId]))
                             .map(l => {
                                 const pos = l.location ? [l.location.lat, l.location.lng] : LANE_PATHS[l.laneId];
-                                // Intensity based on crowd count. 0-1 range typically, but can be higher.
-                                // Let's scale: >100 is max intensity.
                                 const intensity = Math.min((l.crowdCount || 0) / 100, 1.0);
                                 return [...pos, intensity];
                             })}
@@ -103,7 +114,6 @@ const MapDashboard = ({ lanes, className = "h-[600px] w-full", showHeatmap = fal
                 )}
 
                 {lanes.map((lane) => {
-                    // Use dynamic location if available, else fallback to hardcoded
                     let pos = null;
                     if (lane.location && lane.location.lat && lane.location.lng) {
                         pos = [lane.location.lat, lane.location.lng];
@@ -114,7 +124,6 @@ const MapDashboard = ({ lanes, className = "h-[600px] w-full", showHeatmap = fal
                     if (!pos) return null;
 
                     const color = getLaneColor(lane);
-                    // Only show SOS marker if explicitly isSos is true. Do NOT change color based on SOS.
                     const isSos = lane.isSos;
 
                     return (
@@ -155,7 +164,6 @@ const MapDashboard = ({ lanes, className = "h-[600px] w-full", showHeatmap = fal
                                 </Popup>
                             </CircleMarker>
 
-                            {/* SOS Pop Person Marker */}
                             {isSos && (
                                 <Marker position={pos} icon={createPopIcon()}>
                                     <Popup>

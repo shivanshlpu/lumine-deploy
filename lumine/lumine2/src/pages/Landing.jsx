@@ -6,6 +6,7 @@ import ForgotPassword from '../components/ForgotPassword';
 import Registration from '../components/Registration';
 import AdminVerifyIdentity from '../components/AdminVerifyIdentity';
 import AdminRegistration from '../components/AdminRegistration';
+import StaffRegistration from '../components/StaffRegistration';
 import { useTranslation } from '../context/LanguageContext';
 
 const Landing = () => {
@@ -22,34 +23,52 @@ const Landing = () => {
         setGlobalError('');
 
         try {
+            const uidLower = userId.toLowerCase().trim();
+
+            // Guard Role Mismatch Check
+            if (uidLower === 'guard' && role !== 'security_guard') {
+                throw new Error("Access Denied: 'guard' credentials belong to Security Guard role. Please select the Security Guard tab.");
+            }
+            // Parking Role Mismatch Check
+            if (uidLower === 'parking' && role !== 'parking') {
+                throw new Error("Access Denied: 'parking' credentials belong to Parking Staff role. Please select the Parking Staff tab.");
+            }
+            // Counter Role Mismatch Check
+            if (uidLower === 'counter' && role !== 'counter') {
+                throw new Error("Access Denied: 'counter' credentials belong to Counter Staff role. Please select the Counter Staff tab.");
+            }
+            // Admin Role Mismatch Check
+            if (uidLower === 'admin' && role !== 'mandir_admin') {
+                throw new Error("Access Denied: 'admin' credentials belong to Mandir Admin role. Please select the Mandir Admin tab.");
+            }
+
             // Mock Admin Login Success
-            if (role === 'mandir_admin' && userId === 'admin' && password === 'admin123') {
-                await new Promise(resolve => setTimeout(resolve, 1000));
-                // Instead of redirecting, go to Verify Screen
-                setTempAdminEmail('admin@lumine.com'); // Mock email for mock user
+            if (role === 'mandir_admin' && uidLower === 'admin' && password === 'admin123') {
+                await new Promise(resolve => setTimeout(resolve, 800));
+                setTempAdminEmail('admin@lumine.com');
                 setView('adminVerify');
                 setIsLoading(false);
                 return;
             }
 
             // Mock Guard Login
-            if (role === 'security_guard' && userId.toLowerCase() === 'guard' && (password === 'shivansh' || password === 'SHIVANSH')) {
+            if (role === 'security_guard' && uidLower === 'guard' && (password === 'shivansh' || password === 'SHIVANSH')) {
                 await new Promise(resolve => setTimeout(resolve, 800));
-                handleSuccess({ token: 'mock-guard-token', redirectUrl: '/guard/dashboard' });
+                handleSuccess({ token: 'mock-guard-token', redirectUrl: '/guard/dashboard', role: 'security_guard' });
                 return;
             }
 
             // Mock Parking Login
-            if (role === 'parking' && userId.toLowerCase() === 'parking' && (password === 'shivansh' || password === 'SHIVANSH')) {
+            if (role === 'parking' && uidLower === 'parking' && (password === 'shivansh' || password === 'SHIVANSH')) {
                 await new Promise(resolve => setTimeout(resolve, 800));
-                handleSuccess({ token: 'mock-parking-token', redirectUrl: '/parking/dashboard' });
+                handleSuccess({ token: 'mock-parking-token', redirectUrl: '/parking/dashboard', role: 'parking' });
                 return;
             }
 
             // Mock Counter Login
-            if (role === 'counter' && userId.toLowerCase() === 'counter' && (password === 'shivansh' || password === 'SHIVANSH')) {
+            if (role === 'counter' && uidLower === 'counter' && (password === 'shivansh' || password === 'SHIVANSH')) {
                 await new Promise(resolve => setTimeout(resolve, 800));
-                handleSuccess({ token: 'mock-counter-token', redirectUrl: '/counter/dashboard' });
+                handleSuccess({ token: 'mock-counter-token', redirectUrl: '/counter/dashboard', role: 'counter' });
                 return;
             }
 
@@ -97,8 +116,8 @@ const Landing = () => {
     return (
         <div className="bg-white font-sans text-gray-800 min-h-screen flex flex-col">
 
-            <main className="flex-grow flex items-center justify-center p-4 lg:p-8">
-                <div className="max-w-[1400px] w-full h-[85vh] grid lg:grid-cols-2 gap-8 items-center bg-white rounded-3xl overflow-hidden shadow-2xl border border-gray-100">
+            <main className="flex-grow flex items-center justify-center p-3 sm:p-6 lg:p-8">
+                <div className="max-w-[1400px] w-full min-h-[85vh] lg:h-[85vh] grid lg:grid-cols-2 gap-6 lg:gap-8 items-center bg-white rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl border border-gray-100">
 
                     {/* Left Side - Image & Welcome Text */}
                     <div className="relative h-full w-full hidden lg:block overflow-hidden">
@@ -171,16 +190,23 @@ const Landing = () => {
                                     currentRole === 'mandir_admin' ? (
                                         <AdminRegistration
                                             onBackToLogin={() => setView('login')}
-                                            onRegistrationSuccess={() => {
-                                                // After registration -> Redirect to LOGIN (user requirement)
-                                                setView('login');
-                                            }}
+                                            onRegistrationSuccess={() => setView('login')}
+                                        />
+                                    ) : ['security_guard', 'counter', 'parking'].includes(currentRole) ? (
+                                        <StaffRegistration
+                                            role={currentRole}
+                                            onBackToLogin={() => setView('login')}
                                         />
                                     ) : (
                                         <Registration
+                                            role={currentRole}
                                             onBackToLogin={() => setView('login')}
                                             onRegistrationSuccess={() => {
-                                                handleSuccess({ token: 'mock-devotee-token', redirectUrl: '/dashboard' });
+                                                handleSuccess({ 
+                                                    token: `mock-devotee-token`, 
+                                                    redirectUrl: '/dashboard',
+                                                    role: 'devotee' 
+                                                });
                                             }}
                                         />
                                     )

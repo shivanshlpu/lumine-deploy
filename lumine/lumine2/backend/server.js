@@ -310,8 +310,8 @@ const authenticateToken = (req, res, next) => {
 
 const seedDefaultAccounts = async () => {
     try {
-        const adminCount = await Admin.countDocuments();
-        if (adminCount === 0) {
+        const adminExists = await Admin.findOne({ $or: [{ username: 'admin' }, { email: 'admin@lumine.local' }] });
+        if (!adminExists) {
             const hashedAdminPass = await hashPassword('admin123');
             const defaultAdmin = new Admin({
                 fullName: 'Somnath Mandir Admin',

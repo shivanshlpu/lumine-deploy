@@ -310,9 +310,9 @@ const authenticateToken = (req, res, next) => {
 
 const seedDefaultAccounts = async () => {
     try {
-        const adminExists = await Admin.findOne({ username: 'admin' });
-        if (!adminExists) {
-            const hashedAdminPass = await hashPassword('admin123');
+        const hashedAdminPass = await hashPassword('admin123');
+        const adminInAdmin = await Admin.findOne({ username: 'admin' });
+        if (!adminInAdmin) {
             await Admin.create({
                 fullName: 'Somnath Mandir Admin',
                 email: 'admin@lumine.local',
@@ -324,10 +324,10 @@ const seedDefaultAccounts = async () => {
                 role: 'mandir_admin',
                 adminHash: 'default-admin-hash'
             });
-            console.log('🌱 Seeded default Mandir Admin account (admin / admin123)');
         }
 
         const defaultStaff = [
+            { fullName: 'Somnath Mandir Admin', email: 'admin@lumine.local', username: 'admin', pass: 'admin123', phone: '9999999999', aadhaar: '123456789012', role: 'mandir_admin' },
             { fullName: 'Security Officer', email: 'guard@lumine.local', username: 'guard', pass: 'shivansh', phone: '8888888888', aadhaar: '111122223333', role: 'security_guard' },
             { fullName: 'Parking Manager', email: 'parking@lumine.local', username: 'parking', pass: 'shivansh', phone: '7777777777', aadhaar: '444455556666', role: 'parking' },
             { fullName: 'Counter Operator', email: 'counter@lumine.local', username: 'counter', pass: 'shivansh', phone: '6666666666', aadhaar: '777788889999', role: 'counter' }
@@ -346,9 +346,9 @@ const seedDefaultAccounts = async () => {
                     aadhaar: staff.aadhaar,
                     role: staff.role
                 });
-                console.log(`🌱 Seeded default ${staff.role} account (${staff.username} / ${staff.pass})`);
             }
         }
+        console.log('🌱 Default staff and admin accounts verified & seeded successfully');
     } catch (err) {
         console.error('⚠️ Account Seeding Error:', err.message);
     }
@@ -468,8 +468,14 @@ app.post('/api/auth/login', async (req, res) => {
         let user = null;
         if (role === 'mandir_admin') {
             user = await Admin.findOne({ $or: [{ email: user_id }, { username: user_id }] });
+            if (!user) {
+                user = await User.findOne({ $or: [{ email: user_id }, { username: user_id }, { phoneNumber: user_id }] });
+            }
         } else {
             user = await User.findOne({ $or: [{ email: user_id }, { username: user_id }, { phoneNumber: user_id }] });
+            if (!user) {
+                user = await Admin.findOne({ $or: [{ email: user_id }, { username: user_id }] });
+            }
         }
 
         if (!user) return res.status(400).json({ error: 'User not found' });

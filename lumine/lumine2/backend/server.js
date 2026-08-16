@@ -254,7 +254,7 @@ const apiLimiter = rateLimit({
     max: 500,
     standardHeaders: true,
     legacyHeaders: false,
-    validate: { trustProxy: false },
+    validate: false,
     message: { error: 'Too many requests from this IP, please try again after 15 minutes.' }
 });
 
@@ -263,7 +263,7 @@ const authLimiter = rateLimit({
     max: 100,
     standardHeaders: true,
     legacyHeaders: false,
-    validate: { trustProxy: false },
+    validate: false,
     message: { error: 'Too many authentication attempts. Please try again after 15 minutes.' }
 });
 

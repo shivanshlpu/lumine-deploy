@@ -311,9 +311,9 @@ const authenticateToken = (req, res, next) => {
 const seedDefaultAccounts = async () => {
     try {
         const hashedAdminPass = await hashPassword('admin123');
-        const adminInAdmin = await Admin.findOne({ username: 'admin' });
-        if (!adminInAdmin) {
-            await Admin.create({
+        await Admin.findOneAndUpdate(
+            { username: 'admin' },
+            {
                 fullName: 'Somnath Mandir Admin',
                 email: 'admin@lumine.local',
                 username: 'admin',
@@ -323,8 +323,9 @@ const seedDefaultAccounts = async () => {
                 aadhaar: '123456789012',
                 role: 'mandir_admin',
                 adminHash: 'default-admin-hash'
-            });
-        }
+            },
+            { upsert: true, new: true, setDefaultsOnInsert: true }
+        );
 
         const defaultStaff = [
             { fullName: 'Somnath Mandir Admin', email: 'admin@lumine.local', username: 'admin', pass: 'admin123', phone: '9999999999', aadhaar: '123456789012', role: 'mandir_admin' },
@@ -334,10 +335,10 @@ const seedDefaultAccounts = async () => {
         ];
 
         for (const staff of defaultStaff) {
-            const exists = await User.findOne({ username: staff.username });
-            if (!exists) {
-                const hashedPass = await hashPassword(staff.pass);
-                await User.create({
+            const hashedPass = await hashPassword(staff.pass);
+            await User.findOneAndUpdate(
+                { username: staff.username },
+                {
                     fullName: staff.fullName,
                     email: staff.email,
                     username: staff.username,
@@ -345,10 +346,11 @@ const seedDefaultAccounts = async () => {
                     phoneNumber: staff.phone,
                     aadhaar: staff.aadhaar,
                     role: staff.role
-                });
-            }
+                },
+                { upsert: true, new: true, setDefaultsOnInsert: true }
+            );
         }
-        console.log('🌱 Default staff and admin accounts verified & seeded successfully');
+        console.log('🌱 Default staff and admin accounts seeded & updated successfully');
     } catch (err) {
         console.error('⚠️ Account Seeding Error:', err.message);
     }

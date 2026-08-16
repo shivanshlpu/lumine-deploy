@@ -310,20 +310,20 @@ const authenticateToken = (req, res, next) => {
 
 const seedDefaultAccounts = async () => {
     try {
-        const adminExists = await Admin.findOne({ $or: [{ username: 'admin' }, { email: 'admin@lumine.local' }] });
+        const adminExists = await Admin.findOne({ username: 'admin' });
         if (!adminExists) {
             const hashedAdminPass = await hashPassword('admin123');
-            const defaultAdmin = new Admin({
+            await Admin.create({
                 fullName: 'Somnath Mandir Admin',
                 email: 'admin@lumine.local',
                 username: 'admin',
                 password: hashedAdminPass,
                 phoneNumber: '9999999999',
                 aadhar: '123456789012',
+                aadhaar: '123456789012',
                 role: 'mandir_admin',
                 adminHash: 'default-admin-hash'
             });
-            await defaultAdmin.save();
             console.log('🌱 Seeded default Mandir Admin account (admin / admin123)');
         }
 
@@ -337,7 +337,7 @@ const seedDefaultAccounts = async () => {
             const exists = await User.findOne({ username: staff.username });
             if (!exists) {
                 const hashedPass = await hashPassword(staff.pass);
-                const newUser = new User({
+                await User.create({
                     fullName: staff.fullName,
                     email: staff.email,
                     username: staff.username,
@@ -346,7 +346,6 @@ const seedDefaultAccounts = async () => {
                     aadhaar: staff.aadhaar,
                     role: staff.role
                 });
-                await newUser.save();
                 console.log(`🌱 Seeded default ${staff.role} account (${staff.username} / ${staff.pass})`);
             }
         }

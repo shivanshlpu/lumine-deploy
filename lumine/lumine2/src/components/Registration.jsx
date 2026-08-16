@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import API_BASE_URL from "../config/api";
 import { useTranslation } from "../context/LanguageContext";
 
 function Registration({ onBackToLogin, onRegistrationSuccess, role = "devotee" }) {
@@ -72,7 +73,7 @@ function Registration({ onBackToLogin, onRegistrationSuccess, role = "devotee" }
         try {
             console.log("Starting registration with Lumine Backend API...");
             
-            const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+            const apiUrl = API_BASE_URL;
             const response = await fetch(`${apiUrl}/api/auth/register`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import API_BASE_URL from "../config/api";
 
 function StaffRegistration({ onBackToLogin, role }) {
     const [formData, setFormData] = useState({
@@ -43,7 +44,7 @@ function StaffRegistration({ onBackToLogin, role }) {
         setIsLoading(true);
 
         try {
-            const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+            const apiUrl = API_BASE_URL;
             const response = await fetch(`${apiUrl}/api/auth/staff/register`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },

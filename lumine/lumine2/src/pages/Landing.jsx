@@ -6,8 +6,8 @@ import ForgotPassword from '../components/ForgotPassword';
 import Registration from '../components/Registration';
 import AdminVerifyIdentity from '../components/AdminVerifyIdentity';
 import AdminRegistration from '../components/AdminRegistration';
-import StaffRegistration from '../components/StaffRegistration';
 import { useTranslation } from '../context/LanguageContext';
+import API_BASE_URL from '../config/api';
 
 const Landing = () => {
     const { t } = useTranslation();
@@ -73,7 +73,7 @@ const Landing = () => {
             }
 
             // Standard API Login
-            const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+            const apiUrl = API_BASE_URL;
             const response = await fetch(`${apiUrl}/api/auth/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },

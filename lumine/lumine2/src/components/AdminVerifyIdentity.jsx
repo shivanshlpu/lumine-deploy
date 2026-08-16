@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import API_BASE_URL from '../config/api';
 import { DeviceMobile, IdentificationCard, ArrowRight, XCircle } from '@phosphor-icons/react';
 import { useTranslation } from '../context/LanguageContext';
 
@@ -15,7 +16,7 @@ const AdminVerifyIdentity = ({ onVerificationSuccess, onBackToLogin, adminEmail 
         setIsLoading(true);
 
         try {
-            const response = await fetch('http://localhost:5000/api/auth/admin/verify-identity', {
+            const response = await fetch(`${API_BASE_URL}/api/auth/admin/verify-identity`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

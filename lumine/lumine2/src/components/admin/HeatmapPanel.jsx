@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { io } from 'socket.io-client';
 import MapDashboard from '../MapDashboard';
+import API_BASE_URL from '../../config/api';
 
 const HeatmapPanel = () => {
     const [lanes, setLanes] = useState([]);
@@ -8,7 +9,7 @@ const HeatmapPanel = () => {
     useEffect(() => {
         const fetchLanes = async () => {
             try {
-                const response = await fetch('http://localhost:5000/api/lanes');
+                const response = await fetch(`${API_BASE_URL}/api/lanes`);
                 const data = await response.json();
                 setLanes(data);
             } catch (error) {
@@ -18,7 +19,7 @@ const HeatmapPanel = () => {
 
         fetchLanes();
 
-        const socket = io('http://localhost:5000');
+        const socket = io(API_BASE_URL);
         socket.on('lane-update', (updatedLane) => {
             console.log('🔥 [DashboardPanel] DATA RECEIVED:', updatedLane);
             setLanes(prev => {

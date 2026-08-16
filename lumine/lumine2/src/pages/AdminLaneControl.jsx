@@ -5,6 +5,7 @@ import LaneCard from '../components/admin/lane/LaneCard';
 import LiveCamModal from '../components/admin/lane/LiveCamModal';
 import GuardAssignModal from '../components/admin/lane/GuardAssignModal';
 import Toast from '../components/admin/Toast';
+import API_BASE_URL from '../config/api';
 import '../styles/admin.css';
 import '../styles/admin-lane.css';
 
@@ -18,17 +19,14 @@ const AdminLaneControl = () => {
     useEffect(() => {
         const fetchLanesData = async () => {
             try {
-                const response = await fetch('http://localhost:5000/api/lanes');
+                const response = await fetch(`${API_BASE_URL}/api/lanes`);
                 const data = await response.json();
 
                 setLanesData(prevLanes => {
-                    // Only show lanes that exist in the backend AND have numeric IDs
                     return data
                         .filter(l => !isNaN(l.laneId))
                         .map((apiLane) => {
                             const laneId = apiLane.laneId;
-
-                            // If we have previous state, preserve it
                             const existingState = prevLanes.find(l => l.laneId == laneId);
 
                             return {
@@ -42,7 +40,7 @@ const AdminLaneControl = () => {
                                 throughput: 0,
                                 lastMove: apiLane.lastUpdated || Date.now(),
                                 status: apiLane.status === 'RED' ? 'STUCK' : (apiLane.status === 'YELLOW' ? 'BUSY' : 'OPEN'),
-                                gateStatus: apiLane.gateStatus || 'OPEN', // Add gateStatus
+                                gateStatus: apiLane.gateStatus || 'OPEN',
                                 manualOverride: false,
                                 temp: apiLane.temperature || '--',
                                 humidity: apiLane.humidity || '--',
@@ -59,7 +57,7 @@ const AdminLaneControl = () => {
         fetchLanesData();
 
         // Socket Connection
-        const socket = io('http://localhost:5000');
+        const socket = io(API_BASE_URL);
 
         socket.on('connect', () => {
             console.log('✅ Connected to WebSocket in Lane Control');
@@ -78,7 +76,7 @@ const AdminLaneControl = () => {
                             temp: updatedLane.temperature || lane.temp,
                             humidity: updatedLane.humidity || lane.humidity,
                             status: !lane.manualOverride ? newStatus : lane.status,
-                            gateStatus: updatedLane.gateStatus || lane.gateStatus, // Update gateStatus
+                            gateStatus: updatedLane.gateStatus || lane.gateStatus,
                             lastMove: new Date()
                         };
                     }
@@ -87,11 +85,10 @@ const AdminLaneControl = () => {
             });
         });
 
-        // Handle New Lane Auto-Creation
         socket.on('receiver_added', (newReceiver) => {
             console.log('🆕 New Receiver Added:', newReceiver);
             setLanesData(prev => {
-                if (prev.find(l => l.laneId == newReceiver.receiver_id)) return prev; // Already exists
+                if (prev.find(l => l.laneId == newReceiver.receiver_id)) return prev;
 
                 const newLane = {
                     id: newReceiver.receiver_id,
@@ -109,14 +106,13 @@ const AdminLaneControl = () => {
                     humidity: '--',
                     history: Array(15).fill(0),
                     isJammed: false,
-                    isUnplaced: !newReceiver.x // Flag for UI to show "Unplaced" warning
+                    isUnplaced: !newReceiver.x
                 };
                 showToast(`New Lane Detected: ${newLane.name}`);
                 return [...prev, newLane];
             });
         });
 
-        // Handle Card Seen
         socket.on('cardseen', (data) => {
             console.log('👀 Card Seen Event:', data);
             setLanesData(prev => prev.map(lane => {
@@ -160,10 +156,9 @@ const AdminLaneControl = () => {
         }));
     };
 
-    // New Function to Toggle Gate
     const handleGateToggle = async (laneId, action) => {
         try {
-            const response = await fetch(`http://localhost:5000/api/lanes/${laneId}/gate`, {
+            const response = await fetch(`${API_BASE_URL}/api/lanes/${laneId}/gate`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ action })
@@ -188,7 +183,6 @@ const AdminLaneControl = () => {
             <AdminHeader onLogout={handleLogout} />
 
             <div className="flex-1 overflow-hidden relative bg-[#F8FAFC] p-6 overflow-y-auto">
-                {/* Header */}
                 <div className="flex justify-between items-end mb-6">
                     <div>
                         <h2 className="text-2xl font-bold brand-font text-gray-800">Lane Status Overview</h2>
@@ -205,14 +199,13 @@ const AdminLaneControl = () => {
                     </div>
                 </div>
 
-                {/* Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pb-20">
                     {lanesData.map(lane => (
                         <LaneCard
                             key={lane.id}
                             lane={lane}
                             onStatusChange={handleStatusChange}
-                            onGateToggle={handleGateToggle} // Pass new toggle function
+                            onGateToggle={handleGateToggle}
                             onOpenCam={setActiveCamLane}
                             onAssignGuard={setActiveGuardLane}
                         />

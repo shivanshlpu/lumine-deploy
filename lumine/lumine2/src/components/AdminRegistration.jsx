@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import API_BASE_URL from "../config/api";
 import { useTranslation } from "../context/LanguageContext";
 
 function AdminRegistration({ onBackToLogin, onRegistrationSuccess }) {
@@ -77,7 +78,7 @@ function AdminRegistration({ onBackToLogin, onRegistrationSuccess }) {
             console.log("Starting Admin registration with Backend Blockchain...");
 
             // Register via Backend API
-            const response = await fetch('http://localhost:5000/api/auth/admin/register', {
+            const response = await fetch(`${API_BASE_URL}/api/auth/admin/register`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

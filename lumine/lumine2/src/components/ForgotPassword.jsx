@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import API_BASE_URL from '../config/api';
 import { useTranslation } from '../context/LanguageContext';
 import { ROLES } from '../constants/roles';
 import RoleSelector from './RoleSelector';
@@ -93,7 +94,7 @@ function ForgotPassword({ currentRole, onRoleChange, onBackToLogin }) {
 
         try {
             // Verify OTP
-            const response = await fetch('http://localhost:5000/api/auth/verify-otp', {
+            const response = await fetch('${API_BASE_URL}/api/auth/verify-otp', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -157,7 +158,7 @@ function ForgotPassword({ currentRole, onRoleChange, onBackToLogin }) {
 
         try {
             // Reset password
-            const response = await fetch('http://localhost:5000/api/auth/reset-password', {
+            const response = await fetch('${API_BASE_URL}/api/auth/reset-password', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -197,7 +198,7 @@ function ForgotPassword({ currentRole, onRoleChange, onBackToLogin }) {
         setGlobalError('');
 
         try {
-            const response = await fetch('http://localhost:5000/api/auth/resend-otp', {
+            const response = await fetch('${API_BASE_URL}/api/auth/resend-otp', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

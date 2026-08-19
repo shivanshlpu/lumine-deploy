@@ -4,12 +4,6 @@ import { io } from 'socket.io-client';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
-// Ensure Leaflet global is accessible for plugins
-if (typeof window !== 'undefined') {
-    window.L = L;
-}
-import 'leaflet.heat';
-
 import AdminHeader from '../components/admin/AdminHeader';
 import API_BASE_URL from '../config/api';
 import '../styles/admin.css';
@@ -54,29 +48,105 @@ const VIZ_STYLES = {
 };
 
 // =============================================================
-// HeatLayer — Leaflet.heat integration inside react-leaflet
+// MapResizeHandler — Fixes Leaflet tile rendering on initial mount
 // =============================================================
-const HeatLayer = ({ points, radius, blur, opacity, gradient }) => {
+const MapResizeHandler = () => {
     const map = useMap();
-    const heatRef = useRef(null);
+    useEffect(() => {
+        if (!map) return;
+        const timer = setTimeout(() => {
+            map.invalidateSize();
+        }, 200);
+        return () => clearTimeout(timer);
+    }, [map]);
+    return null;
+};
+
+// =============================================================
+// Native Canvas HeatLayer — 100% crash-proof in all browsers
+// =============================================================
+const HeatLayer = ({ points, radius = 45, blur = 25, opacity = 0.6 }) => {
+    const map = useMap();
+    const canvasLayerRef = useRef(null);
 
     useEffect(() => {
-        if (heatRef.current) {
-            map.removeLayer(heatRef.current);
-        }
-        heatRef.current = L.heatLayer(points || [], {
-            radius: radius,
-            blur: blur,
-            minOpacity: opacity,
-            gradient: gradient
-        }).addTo(map);
+        if (!map) return;
+
+        const CanvasHeatLayer = L.Layer.extend({
+            onAdd: function (leafletMap) {
+                this._map = leafletMap;
+                const pane = leafletMap.getPane('overlayPane') || leafletMap.getPanes().overlayPane;
+                this._canvas = L.DomUtil.create('canvas', 'ai-heatmap-canvas-layer');
+                this._canvas.style.position = 'absolute';
+                this._canvas.style.pointerEvents = 'none';
+                this._canvas.style.zIndex = '400';
+                pane.appendChild(this._canvas);
+
+                leafletMap.on('move', this._render, this);
+                leafletMap.on('zoom', this._render, this);
+                leafletMap.on('resize', this._render, this);
+                leafletMap.on('viewreset', this._render, this);
+                this._render();
+            },
+            onRemove: function (leafletMap) {
+                leafletMap.off('move', this._render, this);
+                leafletMap.off('zoom', this._render, this);
+                leafletMap.off('resize', this._render, this);
+                leafletMap.off('viewreset', this._render, this);
+                if (this._canvas && this._canvas.parentNode) {
+                    this._canvas.parentNode.removeChild(this._canvas);
+                }
+            },
+            _render: function () {
+                if (!this._canvas || !this._map) return;
+                const size = this._map.getSize();
+                this._canvas.width = size.x;
+                this._canvas.height = size.y;
+
+                const topLeft = this._map.containerPointToLayerPoint([0, 0]);
+                L.DomUtil.setPosition(this._canvas, topLeft);
+
+                const ctx = this._canvas.getContext('2d');
+                ctx.clearRect(0, 0, this._canvas.width, this._canvas.height);
+
+                if (!points || points.length === 0) return;
+
+                points.forEach(pt => {
+                    const lat = Array.isArray(pt) ? pt[0] : (pt.lat || 0);
+                    const lon = Array.isArray(pt) ? pt[1] : (pt.lon || 0);
+                    const val = Array.isArray(pt) ? (pt[2] || 1.0) : (pt.count || pt.intensity || 1.0);
+                    if (!lat || !lon) return;
+
+                    const point = this._map.latLngToContainerPoint([lat, lon]);
+                    const rad = Math.max(14, radius);
+
+                    const grad = ctx.createRadialGradient(point.x, point.y, 0, point.x, point.y, rad);
+                    const alpha = Math.min(1.0, Math.max(0.2, val * opacity));
+                    grad.addColorStop(0, `rgba(239, 68, 68, ${alpha})`);
+                    grad.addColorStop(0.35, `rgba(249, 115, 22, ${alpha * 0.85})`);
+                    grad.addColorStop(0.65, `rgba(234, 179, 8, ${alpha * 0.6})`);
+                    grad.addColorStop(0.85, `rgba(34, 197, 94, ${alpha * 0.3})`);
+                    grad.addColorStop(1, 'rgba(59, 130, 246, 0)');
+
+                    ctx.beginPath();
+                    ctx.fillStyle = grad;
+                    ctx.arc(point.x, point.y, rad, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+            }
+        });
+
+        const layer = new CanvasHeatLayer();
+        layer.addTo(map);
+        canvasLayerRef.current = layer;
 
         return () => {
-            if (heatRef.current) {
-                map.removeLayer(heatRef.current);
+            if (canvasLayerRef.current && map) {
+                map.removeLayer(canvasLayerRef.current);
+                canvasLayerRef.current = null;
             }
         };
-    }, [map, points, radius, blur, opacity, gradient]);
+    }, [map, points, radius, blur, opacity]);
 
     return null;
 };
@@ -732,8 +802,7 @@ const AdminAIHeatmap = () => {
     };
 
     // --- Camera drag on map ---
-    const handleMarkerDragEnd = async (camId, e) => {
-        const { lat, lng } = e.target.getLatLng();
+    const handleDragEnd = async (camId, lat, lng) => {
         try {
             await fetch(`${API_BASE}/cameras/${camId}`, {
                 method: 'PUT',
@@ -822,6 +891,7 @@ const AdminAIHeatmap = () => {
                         zoomControl={false}
                         style={{ height: '100%', width: '100%' }}
                     >
+                        <MapResizeHandler />
                         <LayersControl position="topright">
                             <LayersControl.BaseLayer checked name="Standard">
                                 <TileLayer

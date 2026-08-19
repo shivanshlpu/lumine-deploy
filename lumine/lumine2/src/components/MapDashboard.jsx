@@ -1,8 +1,7 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, CircleMarker, Popup, LayersControl, Marker, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import 'leaflet.heat';
 
 // Somnath Mandir Coordinates
 const CENTER_POSITION = [20.8880, 70.4010];
@@ -33,19 +32,81 @@ const MapResizeHandler = () => {
 
 const HeatmapLayer = ({ points }) => {
     const map = useMap();
+    const canvasLayerRef = useRef(null);
 
     useEffect(() => {
-        if (!points || points.length === 0) return;
+        if (!map) return;
 
-        const heat = L.heatLayer(points, {
-            radius: 25,
-            blur: 15,
-            maxZoom: 17,
-            gradient: { 0.4: 'blue', 0.65: 'lime', 1: 'red' }
-        }).addTo(map);
+        const CanvasHeatLayer = L.Layer.extend({
+            onAdd: function (leafletMap) {
+                this._map = leafletMap;
+                const pane = leafletMap.getPane('overlayPane') || leafletMap.getPanes().overlayPane;
+                this._canvas = L.DomUtil.create('canvas', 'map-dashboard-heat-layer');
+                this._canvas.style.position = 'absolute';
+                this._canvas.style.pointerEvents = 'none';
+                this._canvas.style.zIndex = '350';
+                pane.appendChild(this._canvas);
+
+                leafletMap.on('move', this._render, this);
+                leafletMap.on('zoom', this._render, this);
+                leafletMap.on('resize', this._render, this);
+                leafletMap.on('viewreset', this._render, this);
+                this._render();
+            },
+            onRemove: function (leafletMap) {
+                leafletMap.off('move', this._render, this);
+                leafletMap.off('zoom', this._render, this);
+                leafletMap.off('resize', this._render, this);
+                leafletMap.off('viewreset', this._render, this);
+                if (this._canvas && this._canvas.parentNode) {
+                    this._canvas.parentNode.removeChild(this._canvas);
+                }
+            },
+            _render: function () {
+                if (!this._canvas || !this._map) return;
+                const size = this._map.getSize();
+                this._canvas.width = size.x;
+                this._canvas.height = size.y;
+
+                const topLeft = this._map.containerPointToLayerPoint([0, 0]);
+                L.DomUtil.setPosition(this._canvas, topLeft);
+
+                const ctx = this._canvas.getContext('2d');
+                ctx.clearRect(0, 0, this._canvas.width, this._canvas.height);
+
+                if (!points || points.length === 0) return;
+
+                points.forEach(pt => {
+                    const lat = Array.isArray(pt) ? pt[0] : (pt.lat || 0);
+                    const lon = Array.isArray(pt) ? pt[1] : (pt.lon || 0);
+                    const val = Array.isArray(pt) ? (pt[2] || 1.0) : (pt.intensity || 1.0);
+                    if (!lat || !lon) return;
+
+                    const point = this._map.latLngToContainerPoint([lat, lon]);
+                    const rad = 30;
+
+                    const grad = ctx.createRadialGradient(point.x, point.y, 0, point.x, point.y, rad);
+                    grad.addColorStop(0, `rgba(239, 68, 68, ${Math.min(1.0, val * 0.7)})`);
+                    grad.addColorStop(0.5, `rgba(234, 179, 8, ${Math.min(0.6, val * 0.4)})`);
+                    grad.addColorStop(1, 'rgba(59, 130, 246, 0)');
+
+                    ctx.beginPath();
+                    ctx.fillStyle = grad;
+                    ctx.arc(point.x, point.y, rad, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+            }
+        });
+
+        const layer = new CanvasHeatLayer();
+        layer.addTo(map);
+        canvasLayerRef.current = layer;
 
         return () => {
-            map.removeLayer(heat);
+            if (canvasLayerRef.current && map) {
+                map.removeLayer(canvasLayerRef.current);
+                canvasLayerRef.current = null;
+            }
         };
     }, [map, points]);
 

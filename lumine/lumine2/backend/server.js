@@ -1420,7 +1420,7 @@ let aiVisionCameras = {
     }
 };
 
-let aiCameraPoints = {}; // { cam_id: [ {lat, lon, count} ] }
+let aiCameraPoints = {}; // { cam_id: [ {lat, lon, count} ] } — Strictly stores real camera detections
 let aiCameraFrames = {}; // { cam_id: base64/bytes }
 
 // Helper function to project camera local coordinates (relX meters, relY meters) to GPS lat/lon
@@ -1433,33 +1433,6 @@ const relativeToGlobalGps = (cam, relX, relY) => {
     const dLon = (de / (R * Math.cos((Math.PI * cam.lat) / 180))) * (180 / Math.PI);
     return { lat: cam.lat + dLat, lon: cam.lon + dLon };
 };
-
-// Seed initial simulated heatmap points around cameras
-const generateSimulatedHeatmapPoints = () => {
-    const pointsByCam = {};
-    Object.values(aiVisionCameras).forEach((cam) => {
-        const count = 6 + Math.floor(Math.random() * 10);
-        const camPts = [];
-        for (let i = 0; i < count; i++) {
-            const dist = 5 + Math.random() * 32;
-            const maxFovWidth = dist * Math.tan(((cam.fov || 60) * Math.PI) / 360);
-            const sideOffset = (Math.random() * 2 - 1) * maxFovWidth * 0.8;
-            const globalPos = relativeToGlobalGps(cam, sideOffset, dist);
-            camPts.push({ lat: globalPos.lat, lon: globalPos.lon, count: 1 });
-        }
-        pointsByCam[cam.id] = camPts;
-    });
-    aiCameraPoints = pointsByCam;
-};
-generateSimulatedHeatmapPoints();
-
-// Periodic simulation updater for AI Vision Heatmap
-setInterval(() => {
-    generateSimulatedHeatmapPoints();
-    const allPoints = [];
-    Object.values(aiCameraPoints).forEach(pts => allPoints.push(...pts));
-    io.emit('ai-heatmap-update', allPoints);
-}, 2500);
 
 // GET /api/ai-heatmap/cameras — Get all AI cameras
 app.get('/api/ai-heatmap/cameras', (req, res) => {
@@ -1541,6 +1514,16 @@ app.post('/api/ai-heatmap/cameras/:id/data', (req, res) => {
     io.emit('ai-heatmap-update', allPoints);
 
     res.json({ status: 'ok', processed_points: globalPoints.length });
+});
+
+// POST /api/ai-heatmap/cameras/:id/clear — Clear detection points for a stopped camera
+app.post('/api/ai-heatmap/cameras/:id/clear', (req, res) => {
+    const camId = req.params.id;
+    aiCameraPoints[camId] = [];
+    const allPoints = [];
+    Object.values(aiCameraPoints).forEach(pts => allPoints.push(...pts));
+    io.emit('ai-heatmap-update', allPoints);
+    res.json({ status: 'cleared', id: camId });
 });
 
 // GET /api/ai-heatmap/heatmap — Get all global heatmap points

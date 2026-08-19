@@ -3,7 +3,13 @@ import { MapContainer, TileLayer, Marker, Polygon, useMap, LayersControl } from 
 import { io } from 'socket.io-client';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+
+// Ensure Leaflet global is accessible for plugins
+if (typeof window !== 'undefined') {
+    window.L = L;
+}
 import 'leaflet.heat';
+
 import AdminHeader from '../components/admin/AdminHeader';
 import API_BASE_URL from '../config/api';
 import '../styles/admin.css';
@@ -315,7 +321,10 @@ const AdminAIHeatmap = () => {
         const initAIModel = async () => {
             try {
                 setModelLoading(true);
+                // Dynamically import to ensure modules are loaded without crashing SSR or bundle evaluation
+                const tf = await import('@tensorflow/tfjs');
                 await tf.ready();
+                const cocoSsd = await import('@tensorflow-models/coco-ssd');
                 const model = await cocoSsd.load({ base: 'lite_mobilenet_v2' });
                 if (isMounted) {
                     modelRef.current = model;
@@ -1228,4 +1237,51 @@ const AdminAIHeatmap = () => {
     );
 };
 
-export default AdminAIHeatmap;
+// =============================================================
+// Error Boundary to prevent White Screen on unhandled device/GPU errors
+// =============================================================
+class HeatmapErrorBoundary extends React.Component {
+    constructor(props) {
+        super(props);
+        this.state = { hasError: false, error: null };
+    }
+
+    static getDerivedStateFromError(error) {
+        return { hasError: true, error };
+    }
+
+    componentDidCatch(error, errorInfo) {
+        console.error('HeatmapErrorBoundary caught:', error, errorInfo);
+    }
+
+    render() {
+        if (this.state.hasError) {
+            return (
+                <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: '#0f172a', color: '#ffffff', alignItems: 'center', justifyContent: 'center', padding: '24px', textAlign: 'center' }}>
+                    <div style={{ fontSize: '3rem', marginBottom: '12px' }}>🛰️</div>
+                    <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '8px', color: '#f8fafc' }}>
+                        AI Vision Heatmap Ready
+                    </h2>
+                    <p style={{ color: '#94a3b8', maxWidth: '460px', fontSize: '0.9rem', marginBottom: '20px' }}>
+                        The map dashboard encountered a temporary initialization glitch. Click below to reload.
+                    </p>
+                    <button
+                        onClick={() => window.location.reload()}
+                        style={{ padding: '10px 24px', backgroundColor: '#f97316', color: '#ffffff', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.95rem' }}
+                    >
+                        🔄 Reload Dashboard
+                    </button>
+                </div>
+            );
+        }
+        return this.props.children;
+    }
+}
+
+const SafeAdminAIHeatmap = (props) => (
+    <HeatmapErrorBoundary>
+        <AdminAIHeatmap {...props} />
+    </HeatmapErrorBoundary>
+);
+
+export default SafeAdminAIHeatmap;

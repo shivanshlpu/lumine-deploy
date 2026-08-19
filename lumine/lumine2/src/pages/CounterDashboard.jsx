@@ -17,6 +17,7 @@ import {
     CheckCheck,
 } from 'lucide-react';
 import { useTranslation } from '../context/LanguageContext';
+import API_BASE_URL from '../config/api';
 
 const CounterDashboard = () => {
     const { t } = useTranslation();
@@ -52,7 +53,7 @@ const CounterDashboard = () => {
     const [userList, setUserList] = useState([]);
     const [loadingUsers, setLoadingUsers] = useState(false);
 
-    const API_BASE = `http://${window.location.hostname}:5000`;
+    const API_BASE = API_BASE_URL;
 
     const logout = () => {
         sessionStorage.clear();

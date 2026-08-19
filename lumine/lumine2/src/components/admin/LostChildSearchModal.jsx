@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X, Search, User, MapPin, Clock, AlertTriangle } from 'lucide-react';
+import API_BASE_URL from '../../config/api';
 
 const LostChildSearchModal = ({ isOpen, onClose }) => {
     const [query, setQuery] = useState('');
@@ -18,7 +19,6 @@ const LostChildSearchModal = ({ isOpen, onClose }) => {
         setResult(null);
 
         try {
-            const API_BASE_URL = `http://${window.location.hostname}:5000`;
             const res = await fetch(`${API_BASE_URL}/api/search/lost-child?q=${query.trim()}`);
             const data = await res.json();
 

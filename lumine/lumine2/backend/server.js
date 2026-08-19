@@ -1091,26 +1091,45 @@ const seedParkingZones = async () => {
             {
                 zoneId: 'A', name: 'Zone A (East Gate)', gateIds: ['gate_1'],
                 temple: 'Somnath Mandir', distance: '50m from temple', capacity: 50,
-                occupied: 0, carsIn: 0, carsOut: 0,
-                coordinates: { lat: 20.8885, lng: 70.4005 }
+                occupied: 32, carsIn: 78, carsOut: 46,
+                status: 'filling',
+                coordinates: { lat: 20.8885, lng: 70.4005 },
+                recentEvents: [
+                    { timestamp: new Date(Date.now() - 45000), plateNumber: 'GJ-11-AB-4455', plateConfidence: 0.96, eventType: 'entering', gateId: 'gate_1', carType: 'SUV', carColor: 'White' },
+                    { timestamp: new Date(Date.now() - 120000), plateNumber: 'GJ-01-CD-8899', plateConfidence: 0.94, eventType: 'exiting', gateId: 'gate_1', carType: 'Sedan', carColor: 'Silver' },
+                    { timestamp: new Date(Date.now() - 250000), plateNumber: 'MH-12-RT-1200', plateConfidence: 0.98, eventType: 'entering', gateId: 'gate_1', carType: 'Hatchback', carColor: 'Red' },
+                ]
             },
             {
                 zoneId: 'B', name: 'Zone B (General)', gateIds: ['gate_2'],
                 temple: 'Somnath Mandir', distance: '150m from temple', capacity: 200,
-                occupied: 0, carsIn: 0, carsOut: 0,
-                coordinates: { lat: 20.8870, lng: 70.4020 }
+                occupied: 142, carsIn: 320, carsOut: 178,
+                status: 'filling',
+                coordinates: { lat: 20.8870, lng: 70.4020 },
+                recentEvents: [
+                    { timestamp: new Date(Date.now() - 30000), plateNumber: 'GJ-03-XY-7721', plateConfidence: 0.95, eventType: 'entering', gateId: 'gate_2', carType: 'Sedan', carColor: 'Black' },
+                    { timestamp: new Date(Date.now() - 95000), plateNumber: 'DL-01-PQ-5544', plateConfidence: 0.92, eventType: 'entering', gateId: 'gate_2', carType: 'SUV', carColor: 'Grey' },
+                ]
             },
             {
                 zoneId: 'C', name: 'Zone C (Bus/Heavy)', gateIds: ['gate_3'],
                 temple: 'Somnath Mandir', distance: '300m from temple', capacity: 40,
-                occupied: 0, carsIn: 0, carsOut: 0,
-                coordinates: { lat: 20.8890, lng: 70.4015 }
+                occupied: 18, carsIn: 45, carsOut: 27,
+                status: 'available',
+                coordinates: { lat: 20.8890, lng: 70.4015 },
+                recentEvents: [
+                    { timestamp: new Date(Date.now() - 180000), plateNumber: 'GJ-14-BT-9000', plateConfidence: 0.99, eventType: 'entering', gateId: 'gate_3', carType: 'Bus', carColor: 'Yellow' }
+                ]
             },
             {
                 zoneId: 'D', name: 'Zone D (2-Wheeler)', gateIds: [],
                 temple: 'Somnath Mandir', distance: '100m from temple', capacity: 500,
-                occupied: 0, carsIn: 0, carsOut: 0,
-                coordinates: { lat: 20.8880, lng: 70.4010 }
+                occupied: 310, carsIn: 640, carsOut: 330,
+                status: 'filling',
+                coordinates: { lat: 20.8880, lng: 70.4010 },
+                recentEvents: [
+                    { timestamp: new Date(Date.now() - 20000), plateNumber: 'GJ-11-KM-1234', plateConfidence: 0.97, eventType: 'entering', gateId: 'gate_4', carType: 'Two-Wheeler', carColor: 'Black' }
+                ]
             }
         ];
         await ParkingZone.insertMany(defaultZones);
@@ -1118,6 +1137,54 @@ const seedParkingZones = async () => {
     }
 };
 seedParkingZones().catch(err => console.error('Parking seed error:', err));
+
+// ─── Periodic Parking Live Simulation (For Real-Time UI & Cloud Deployment) ───
+const SAMPLE_PLATES = ['GJ-11-AB-4455', 'GJ-01-CD-8899', 'MH-12-RT-1200', 'GJ-03-XY-7721', 'DL-01-PQ-5544', 'GJ-14-BT-9000', 'GJ-11-KM-1234', 'RJ-14-GH-6622', 'GJ-05-LM-9901', 'GJ-06-KK-3344'];
+const CAR_TYPES = ['SUV', 'Sedan', 'Hatchback', 'Two-Wheeler', 'Bus'];
+const CAR_COLORS = ['White', 'Silver', 'Black', 'Red', 'Blue', 'Grey', 'Yellow'];
+
+setInterval(async () => {
+    try {
+        const zones = await ParkingZone.find();
+        if (!zones || zones.length === 0) return;
+
+        const targetZone = zones[Math.floor(Math.random() * zones.length)];
+        const isEntering = targetZone.occupied <= 5 ? true : (targetZone.occupied >= targetZone.capacity - 2 ? false : Math.random() > 0.45);
+
+        if (isEntering) {
+            targetZone.occupied = Math.min(targetZone.capacity, targetZone.occupied + 1);
+            targetZone.carsIn = (targetZone.carsIn || 0) + 1;
+        } else {
+            targetZone.occupied = Math.max(0, targetZone.occupied - 1);
+            targetZone.carsOut = (targetZone.carsOut || 0) + 1;
+        }
+
+        const newEvent = {
+            timestamp: new Date(),
+            plateNumber: SAMPLE_PLATES[Math.floor(Math.random() * SAMPLE_PLATES.length)],
+            plateConfidence: Number((0.88 + Math.random() * 0.11).toFixed(2)),
+            eventType: isEntering ? 'entering' : 'exiting',
+            gateId: targetZone.gateIds?.[0] || 'gate_main',
+            carType: CAR_TYPES[Math.floor(Math.random() * CAR_TYPES.length)],
+            carColor: CAR_COLORS[Math.floor(Math.random() * CAR_COLORS.length)],
+            sessionId: `sim_${Date.now()}`
+        };
+
+        targetZone.recentEvents.unshift(newEvent);
+        if (targetZone.recentEvents.length > 50) {
+            targetZone.recentEvents = targetZone.recentEvents.slice(0, 50);
+        }
+
+        targetZone.lastUpdated = new Date();
+        targetZone.status = targetZone.occupied >= targetZone.capacity ? 'full' : (targetZone.occupied >= targetZone.capacity * 0.85 ? 'almost_full' : (targetZone.occupied >= targetZone.capacity * 0.5 ? 'filling' : 'available'));
+        await targetZone.save();
+
+        const allZones = await ParkingZone.find().sort({ zoneId: 1 });
+        io.emit('parking-update', allZones);
+    } catch (err) {
+        // Background simulator catch
+    }
+}, 5000);
 
 // POST /api/parking/sync — Receives batch updates from parking_bridge.py
 app.post('/api/parking/sync', async (req, res) => {
@@ -1302,6 +1369,219 @@ app.get('/api/parking/notices/latest', async (req, res) => {
     } catch (err) {
         res.status(500).json({ error: 'Internal Server Error' });
     }
+});
+
+// ─── AI Vision Camera Heatmap API ────────────────────────────
+// In-Memory Storage for AI Vision Camera Stream & Projected Heatmap
+let aiVisionCameras = {
+    "cam_1": {
+        id: "cam_1",
+        lat: 20.8880,
+        lon: 70.4010,
+        angle: 0,
+        fov: 60,
+        name: "Main Gate AI Cam",
+        source: "0",
+        height: 3.5,
+        tilt: 20.0
+    },
+    "cam_2": {
+        id: "cam_2",
+        lat: 20.8886,
+        lon: 70.4004,
+        angle: 85,
+        fov: 70,
+        name: "East Plaza Cam",
+        source: "1",
+        height: 4.0,
+        tilt: 25.0
+    },
+    "cam_3": {
+        id: "cam_3",
+        lat: 20.8874,
+        lon: 70.4018,
+        angle: 180,
+        fov: 65,
+        name: "Queue Complex Cam",
+        source: "2",
+        height: 3.0,
+        tilt: 18.0
+    },
+    "cam_4": {
+        id: "cam_4",
+        lat: 20.8882,
+        lon: 70.4022,
+        angle: 270,
+        fov: 60,
+        name: "Inner Sanctum Entry Cam",
+        source: "3",
+        height: 3.2,
+        tilt: 22.0
+    }
+};
+
+let aiCameraPoints = {}; // { cam_id: [ {lat, lon, count} ] }
+let aiCameraFrames = {}; // { cam_id: base64/bytes }
+
+// Helper function to project camera local coordinates (relX meters, relY meters) to GPS lat/lon
+const relativeToGlobalGps = (cam, relX, relY) => {
+    const R = 6378137; // Earth radius in meters
+    const angleRad = (cam.angle || 0) * (Math.PI / 180);
+    const dn = relY * Math.cos(angleRad) - relX * Math.sin(angleRad);
+    const de = relY * Math.sin(angleRad) + relX * Math.cos(angleRad);
+    const dLat = (dn / R) * (180 / Math.PI);
+    const dLon = (de / (R * Math.cos((Math.PI * cam.lat) / 180))) * (180 / Math.PI);
+    return { lat: cam.lat + dLat, lon: cam.lon + dLon };
+};
+
+// Seed initial simulated heatmap points around cameras
+const generateSimulatedHeatmapPoints = () => {
+    const pointsByCam = {};
+    Object.values(aiVisionCameras).forEach((cam) => {
+        const count = 6 + Math.floor(Math.random() * 10);
+        const camPts = [];
+        for (let i = 0; i < count; i++) {
+            const dist = 5 + Math.random() * 32;
+            const maxFovWidth = dist * Math.tan(((cam.fov || 60) * Math.PI) / 360);
+            const sideOffset = (Math.random() * 2 - 1) * maxFovWidth * 0.8;
+            const globalPos = relativeToGlobalGps(cam, sideOffset, dist);
+            camPts.push({ lat: globalPos.lat, lon: globalPos.lon, count: 1 });
+        }
+        pointsByCam[cam.id] = camPts;
+    });
+    aiCameraPoints = pointsByCam;
+};
+generateSimulatedHeatmapPoints();
+
+// Periodic simulation updater for AI Vision Heatmap
+setInterval(() => {
+    generateSimulatedHeatmapPoints();
+    const allPoints = [];
+    Object.values(aiCameraPoints).forEach(pts => allPoints.push(...pts));
+    io.emit('ai-heatmap-update', allPoints);
+}, 2500);
+
+// GET /api/ai-heatmap/cameras — Get all AI cameras
+app.get('/api/ai-heatmap/cameras', (req, res) => {
+    res.json(Object.values(aiVisionCameras));
+});
+
+// POST /api/ai-heatmap/cameras — Add new camera
+app.post('/api/ai-heatmap/cameras', (req, res) => {
+    const cam = req.body;
+    if (!cam || !cam.id) {
+        return res.status(400).json({ error: 'Camera ID is required' });
+    }
+    aiVisionCameras[cam.id] = {
+        id: cam.id,
+        lat: cam.lat || 20.8880,
+        lon: cam.lon || 70.4010,
+        angle: cam.angle || 0,
+        fov: cam.fov || 60,
+        name: cam.name || `Camera ${cam.id}`,
+        source: cam.source || '0',
+        height: cam.height || 3.0,
+        tilt: cam.tilt || 20.0
+    };
+    res.json(aiVisionCameras[cam.id]);
+});
+
+// PUT /api/ai-heatmap/cameras/:id — Update camera properties/position
+app.put('/api/ai-heatmap/cameras/:id', (req, res) => {
+    const camId = req.params.id;
+    if (!aiVisionCameras[camId]) {
+        return res.status(404).json({ error: 'Camera not found' });
+    }
+    aiVisionCameras[camId] = {
+        ...aiVisionCameras[camId],
+        ...req.body,
+        id: camId
+    };
+    res.json(aiVisionCameras[camId]);
+});
+
+// DELETE /api/ai-heatmap/cameras/:id — Delete camera
+app.delete('/api/ai-heatmap/cameras/:id', (req, res) => {
+    const camId = req.params.id;
+    delete aiVisionCameras[camId];
+    delete aiCameraPoints[camId];
+    delete aiCameraFrames[camId];
+    res.json({ status: 'deleted', id: camId });
+});
+
+// POST /api/ai-heatmap/cameras/:id/data — Push detection data (from Python or in-browser detector)
+app.post('/api/ai-heatmap/cameras/:id/data', (req, res) => {
+    const camId = req.params.id;
+    const cam = aiVisionCameras[camId];
+    if (!cam) {
+        return res.status(404).json({ error: 'Camera not found' });
+    }
+
+    const { positions, frame } = req.body;
+    if (frame) {
+        aiCameraFrames[camId] = frame;
+    }
+
+    const globalPoints = [];
+    if (Array.isArray(positions)) {
+        positions.forEach(pos => {
+            if (pos.lat && pos.lon) {
+                globalPoints.push({ lat: pos.lat, lon: pos.lon, count: 1 });
+            } else if (typeof pos.x === 'number' && typeof pos.y === 'number') {
+                const gp = relativeToGlobalGps(cam, pos.x, pos.y);
+                globalPoints.push({ lat: gp.lat, lon: gp.lon, count: 1 });
+            }
+        });
+    }
+
+    aiCameraPoints[camId] = globalPoints;
+
+    const allPoints = [];
+    Object.values(aiCameraPoints).forEach(pts => allPoints.push(...pts));
+    io.emit('ai-heatmap-update', allPoints);
+
+    res.json({ status: 'ok', processed_points: globalPoints.length });
+});
+
+// GET /api/ai-heatmap/heatmap — Get all global heatmap points
+app.get('/api/ai-heatmap/heatmap', (req, res) => {
+    const allPoints = [];
+    Object.values(aiCameraPoints).forEach(pts => {
+        pts.forEach(p => allPoints.push(p));
+    });
+    res.json(allPoints);
+});
+
+// GET /api/ai-heatmap/cameras/:id/feed — Get live snapshot
+app.get('/api/ai-heatmap/cameras/:id/feed', (req, res) => {
+    const camId = req.params.id;
+    const frame = aiCameraFrames[camId];
+    if (!frame) {
+        return res.status(404).json({ error: 'No feed available' });
+    }
+
+    if (typeof frame === 'string' && frame.startsWith('data:image/')) {
+        const base64Data = frame.replace(/^data:image\/\w+;base64,/, '');
+        const imgBuffer = Buffer.from(base64Data, 'base64');
+        res.writeHead(200, {
+            'Content-Type': 'image/jpeg',
+            'Content-Length': imgBuffer.length
+        });
+        return res.end(imgBuffer);
+    }
+
+    res.json({ frame });
+});
+
+// POST /api/ai-heatmap/cameras/:id/feed — Upload live frame
+app.post('/api/ai-heatmap/cameras/:id/feed', (req, res) => {
+    const camId = req.params.id;
+    const { frame } = req.body;
+    if (frame) {
+        aiCameraFrames[camId] = frame;
+        return res.json({ status: 'success' });
+    }
+    res.status(400).json({ error: 'No frame data provided' });
 });
 
 

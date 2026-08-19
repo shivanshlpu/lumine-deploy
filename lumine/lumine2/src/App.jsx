@@ -39,7 +39,7 @@ function App() {
 
             {/* Admin Routes */}
             <Route path="/admin/dashboard" element={<AdminDashboard />} />
-            <Route path="/admin/heatmap" element={<AdminHeatmap />} />
+            <Route path="/admin/heatmap" element={<Navigate to="/admin/ai-heatmap" replace />} />
             <Route path="/admin/ai-heatmap" element={<AdminAIHeatmap />} />
 
             <Route path="/admin/lane" element={<AdminLaneControl />} />

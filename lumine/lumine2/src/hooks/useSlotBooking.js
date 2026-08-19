@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import API_BASE_URL from '../config/api';
 
 const useSlotBooking = () => {
     const [currentStep, setCurrentStep] = useState(1);
@@ -109,9 +110,6 @@ const useSlotBooking = () => {
                 members: finalMembers,
                 timestamp: new Date().toISOString()
             };
-
-            // Calculate API URL dynamically
-            const API_BASE_URL = `http://${window.location.hostname}:5000`;
 
             const response = await fetch(`${API_BASE_URL}/api/bookings`, {
                 method: 'POST',

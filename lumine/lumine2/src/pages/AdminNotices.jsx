@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { io } from 'socket.io-client';
 import Sidebar from '../components/Sidebar';
 import { Car, MapPin, Clock, Menu } from 'lucide-react';
+import API_BASE_URL from '../config/api';
 
-const API_BASE = `http://${window.location.hostname}:5000`;
+const API_BASE = API_BASE_URL;
 
 const AdminNotices = () => {
     const [parkingNotice, setParkingNotice] = useState(null);

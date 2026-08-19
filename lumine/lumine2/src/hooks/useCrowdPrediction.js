@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import API_BASE_URL from '../config/api';
 import {
     predictCrowdLevel,
     predictDateCrowdLevel,
@@ -26,8 +27,7 @@ const useCrowdPrediction = (temple, date) => {
     const fetchAvailability = useCallback(async (templeId, dateStr) => {
         if (!templeId || !dateStr) return {};
         try {
-            const API_BASE_URL = `http://${window.location.hostname}:5000`;
-            const res = await fetch(`${API_BASE_URL}/api/bookings/availability?temple=${templeId}&date=${dateStr}`);
+            const res = await fetch(`${API_BASE_URL}/api/bookings/availability?temple=${encodeURIComponent(templeId)}&date=${encodeURIComponent(dateStr)}`);
             if (res.ok) {
                 const data = await res.json();
                 return data; // { "06:00 AM - 08:00 AM": 23, ... }

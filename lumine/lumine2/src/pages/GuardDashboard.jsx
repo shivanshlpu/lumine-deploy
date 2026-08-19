@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import '../styles/guard-dashboard.css';
 import LostChildSearchModal from '../components/admin/LostChildSearchModal';
+import API_BASE_URL from '../config/api';
 
 const GuardDashboard = () => {
     const navigate = useNavigate();
@@ -17,9 +18,6 @@ const GuardDashboard = () => {
     const [outcome, setOutcome] = useState('');
     const [reportText, setReportText] = useState('');
     const [currentTask, setCurrentTask] = useState(null);
-
-    // Dynamic API URL for cross-device support
-    const API_BASE_URL = `http://${window.location.hostname}:5000`;
 
     const [, setSocket] = useState(null);
 
@@ -119,9 +117,6 @@ const GuardDashboard = () => {
 
     const submitResolution = async () => {
         if (!currentTask) return;
-
-        // Use dynamic API URL
-        const API_BASE_URL = `http://${window.location.hostname}:5000`;
 
         try {
             const response = await fetch(`${API_BASE_URL}/api/alerts/${currentTask.id}/resolve`, {

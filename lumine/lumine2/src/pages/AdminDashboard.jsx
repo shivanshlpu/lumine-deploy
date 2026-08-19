@@ -12,6 +12,7 @@ import Toast from '../components/admin/Toast';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import AddTeamModal from '../components/admin/AddTeamModal';
+import API_BASE_URL from '../config/api';
 
 
 const INITIAL_GUARDS = [
@@ -33,9 +34,6 @@ const AdminDashboard = () => {
     const [isAddTeamModalOpen, setIsAddTeamModalOpen] = useState(false);
     const [stats, setStats] = useState({ headCount: 0, slotBooking: 0, counterUser: 0 });
     const mapInstanceRef = useRef(null);
-
-    // Dynamic API URL for cross-device support
-    const API_BASE_URL = `http://${window.location.hostname}:5000`;
 
     // --- Socket & Alert Logic ---
     React.useEffect(() => {

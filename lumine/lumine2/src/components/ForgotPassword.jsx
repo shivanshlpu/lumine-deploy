@@ -94,7 +94,7 @@ function ForgotPassword({ currentRole, onRoleChange, onBackToLogin }) {
 
         try {
             // Verify OTP
-            const response = await fetch('${API_BASE_URL}/api/auth/verify-otp', {
+            const response = await fetch(`${API_BASE_URL}/api/auth/verify-otp`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -158,7 +158,7 @@ function ForgotPassword({ currentRole, onRoleChange, onBackToLogin }) {
 
         try {
             // Reset password
-            const response = await fetch('${API_BASE_URL}/api/auth/reset-password', {
+            const response = await fetch(`${API_BASE_URL}/api/auth/reset-password`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -198,7 +198,7 @@ function ForgotPassword({ currentRole, onRoleChange, onBackToLogin }) {
         setGlobalError('');
 
         try {
-            const response = await fetch('${API_BASE_URL}/api/auth/resend-otp', {
+            const response = await fetch(`${API_BASE_URL}/api/auth/resend-otp`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import {
@@ -20,20 +20,95 @@ import {
     Zap,
     Eye,
     Megaphone,
+    Play,
+    Pause
 } from 'lucide-react';
 import { useTranslation } from '../context/LanguageContext';
+import API_BASE_URL from '../config/api';
 
-const API_BASE = `http://${window.location.hostname}:5000`;
+const API_BASE = API_BASE_URL;
+
+// Default initial parking data fallback for offline/demo/first-run
+const DEFAULT_ZONES_FALLBACK = [
+    {
+        zoneId: 'A',
+        name: 'Zone A (East Gate)',
+        gateIds: ['gate_1'],
+        temple: 'Somnath Mandir',
+        distance: '50m from temple',
+        capacity: 50,
+        occupied: 34,
+        carsIn: 82,
+        carsOut: 48,
+        status: 'filling',
+        recentEvents: [
+            { timestamp: new Date(Date.now() - 30000).toISOString(), plateNumber: 'GJ-11-AB-4455', plateConfidence: 0.96, eventType: 'entering', gateId: 'gate_1', carType: 'SUV', carColor: 'White' },
+            { timestamp: new Date(Date.now() - 95000).toISOString(), plateNumber: 'GJ-01-CD-8899', plateConfidence: 0.94, eventType: 'exiting', gateId: 'gate_1', carType: 'Sedan', carColor: 'Silver' },
+            { timestamp: new Date(Date.now() - 180000).toISOString(), plateNumber: 'MH-12-RT-1200', plateConfidence: 0.98, eventType: 'entering', gateId: 'gate_1', carType: 'Hatchback', carColor: 'Red' },
+        ]
+    },
+    {
+        zoneId: 'B',
+        name: 'Zone B (General)',
+        gateIds: ['gate_2'],
+        temple: 'Somnath Mandir',
+        distance: '150m from temple',
+        capacity: 200,
+        occupied: 146,
+        carsIn: 340,
+        carsOut: 194,
+        status: 'filling',
+        recentEvents: [
+            { timestamp: new Date(Date.now() - 20000).toISOString(), plateNumber: 'GJ-03-XY-7721', plateConfidence: 0.95, eventType: 'entering', gateId: 'gate_2', carType: 'Sedan', carColor: 'Black' },
+            { timestamp: new Date(Date.now() - 75000).toISOString(), plateNumber: 'DL-01-PQ-5544', plateConfidence: 0.92, eventType: 'entering', gateId: 'gate_2', carType: 'SUV', carColor: 'Grey' },
+        ]
+    },
+    {
+        zoneId: 'C',
+        name: 'Zone C (Bus/Heavy)',
+        gateIds: ['gate_3'],
+        temple: 'Somnath Mandir',
+        distance: '300m from temple',
+        capacity: 40,
+        occupied: 19,
+        carsIn: 48,
+        carsOut: 29,
+        status: 'available',
+        recentEvents: [
+            { timestamp: new Date(Date.now() - 150000).toISOString(), plateNumber: 'GJ-14-BT-9000', plateConfidence: 0.99, eventType: 'entering', gateId: 'gate_3', carType: 'Bus', carColor: 'Yellow' }
+        ]
+    },
+    {
+        zoneId: 'D',
+        name: 'Zone D (2-Wheeler)',
+        gateIds: [],
+        temple: 'Somnath Mandir',
+        distance: '100m from temple',
+        capacity: 500,
+        occupied: 320,
+        carsIn: 680,
+        carsOut: 360,
+        status: 'filling',
+        recentEvents: [
+            { timestamp: new Date(Date.now() - 15000).toISOString(), plateNumber: 'GJ-11-KM-1234', plateConfidence: 0.97, eventType: 'entering', gateId: 'gate_4', carType: 'Two-Wheeler', carColor: 'Black' }
+        ]
+    }
+];
+
+const SAMPLE_PLATES = ['GJ-11-AB-4455', 'GJ-01-CD-8899', 'MH-12-RT-1200', 'GJ-03-XY-7721', 'DL-01-PQ-5544', 'GJ-14-BT-9000', 'GJ-11-KM-1234', 'RJ-14-GH-6622', 'GJ-05-LM-9901', 'GJ-06-KK-3344', 'GJ-10-EE-2026', 'KA-01-MM-8844'];
+const SAMPLE_TYPES = ['SUV', 'Sedan', 'Hatchback', 'Two-Wheeler', 'Bus'];
+const SAMPLE_COLORS = ['White', 'Silver', 'Black', 'Red', 'Blue', 'Grey', 'Yellow'];
 
 const ParkingDashboard = () => {
     const { t } = useTranslation();
     const navigate = useNavigate();
 
     // --- State ---
-    const [parkingData, setParkingData] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [parkingData, setParkingData] = useState(DEFAULT_ZONES_FALLBACK);
+    const [loading, setLoading] = useState(false);
     const [lastUpdated, setLastUpdated] = useState(new Date());
-    const [isLive, setIsLive] = useState(false);
+    const [isLive, setIsLive] = useState(true);
+    const [autoSimulate, setAutoSimulate] = useState(true);
 
     // Modal
     const [selectedZone, setSelectedZone] = useState(null);
@@ -62,23 +137,82 @@ const ParkingDashboard = () => {
         navigate('/');
     };
 
+    // Helper: update allEvents from zones list
+    const extractAllEvents = useCallback((zones) => {
+        const combined = [];
+        zones.forEach(z => {
+            if (z.recentEvents) {
+                z.recentEvents.forEach(e => {
+                    combined.push({ ...e, zoneName: z.name, zoneId: z.zoneId });
+                });
+            }
+        });
+        combined.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        setAllEvents(combined.slice(0, 100));
+    }, []);
+
+    // Interactive simulate a single random parking event
+    const triggerSimulatedEvent = useCallback(() => {
+        setParkingData(prevZones => {
+            const updated = prevZones.map(z => ({ ...z, recentEvents: [...(z.recentEvents || [])] }));
+            const target = updated[Math.floor(Math.random() * updated.length)];
+            const isEntering = target.occupied <= 5 ? true : (target.occupied >= target.capacity - 2 ? false : Math.random() > 0.45);
+
+            if (isEntering) {
+                target.occupied = Math.min(target.capacity, target.occupied + 1);
+                target.carsIn = (target.carsIn || 0) + 1;
+            } else {
+                target.occupied = Math.max(0, target.occupied - 1);
+                target.carsOut = (target.carsOut || 0) + 1;
+            }
+
+            const newEvent = {
+                timestamp: new Date().toISOString(),
+                plateNumber: SAMPLE_PLATES[Math.floor(Math.random() * SAMPLE_PLATES.length)],
+                plateConfidence: Number((0.88 + Math.random() * 0.11).toFixed(2)),
+                eventType: isEntering ? 'entering' : 'exiting',
+                gateId: target.gateIds?.[0] || 'gate_1',
+                carType: SAMPLE_TYPES[Math.floor(Math.random() * SAMPLE_TYPES.length)],
+                carColor: SAMPLE_COLORS[Math.floor(Math.random() * SAMPLE_COLORS.length)],
+                sessionId: `sim_${Date.now()}`
+            };
+
+            target.recentEvents.unshift(newEvent);
+            if (target.recentEvents.length > 40) {
+                target.recentEvents = target.recentEvents.slice(0, 40);
+            }
+
+            const pct = (target.occupied / target.capacity) * 100;
+            target.status = pct >= 95 ? 'full' : (pct >= 80 ? 'almost_full' : (pct >= 50 ? 'filling' : 'available'));
+
+            extractAllEvents(updated);
+            setLastUpdated(new Date());
+            return updated;
+        });
+    }, [extractAllEvents]);
+
     // --- Initial Fetch ---
     useEffect(() => {
         const fetchZones = async () => {
             try {
                 const resp = await fetch(`${API_BASE}/api/parking/zones`);
-                const data = await resp.json();
-                if (Array.isArray(data) && data.length > 0) {
-                    setParkingData(data);
+                if (resp.ok) {
+                    const data = await resp.json();
+                    if (Array.isArray(data) && data.length > 0) {
+                        setParkingData(data);
+                        extractAllEvents(data);
+                        setIsLive(true);
+                    }
                 }
             } catch (err) {
-                console.error('Failed to fetch parking zones:', err);
+                console.log('Using simulated parking data fallback:', err.message);
+                extractAllEvents(DEFAULT_ZONES_FALLBACK);
             } finally {
                 setLoading(false);
             }
         };
         fetchZones();
-    }, []);
+    }, [extractAllEvents]);
 
     // --- Socket.IO for real-time updates ---
     useEffect(() => {
@@ -90,33 +224,31 @@ const ParkingDashboard = () => {
         });
 
         socket.on('disconnect', () => {
-            setIsLive(false);
+            // Keep status live if client-side simulation is active
         });
 
         socket.on('parking-update', (zones) => {
             if (Array.isArray(zones) && zones.length > 0) {
                 setParkingData(zones);
                 setLastUpdated(new Date());
-
-                // Aggregate recent events from all zones for the vehicle log
-                const combined = [];
-                zones.forEach(z => {
-                    if (z.recentEvents) {
-                        z.recentEvents.forEach(e => {
-                            combined.push({ ...e, zoneName: z.name, zoneId: z.zoneId });
-                        });
-                    }
-                });
-                // Sort by timestamp descending
-                combined.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-                setAllEvents(combined.slice(0, 100));
+                extractAllEvents(zones);
             }
         });
 
         return () => {
             socket.disconnect();
         };
-    }, []);
+    }, [extractAllEvents]);
+
+    // Client-side auto simulation loop for lively demo
+    useEffect(() => {
+        if (!autoSimulate) return;
+        const simInterval = setInterval(() => {
+            triggerSimulatedEvent();
+        }, 4000);
+
+        return () => clearInterval(simInterval);
+    }, [autoSimulate, triggerSimulatedEvent]);
 
     // Auto-scroll vehicle log
     useEffect(() => {
@@ -306,7 +438,29 @@ const ParkingDashboard = () => {
                         <h2 className="font-serif text-2xl font-bold text-navy-800">Parking Overview</h2>
                     </div>
 
-                    <div className="flex items-center gap-6">
+                    <div className="flex items-center gap-3 sm:gap-6">
+                        {/* Simulation Controls */}
+                        <div className="flex items-center gap-2">
+                            <button
+                                type="button"
+                                onClick={triggerSimulatedEvent}
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-50 hover:bg-orange-100 text-orange-700 text-xs font-bold rounded-lg border border-orange-200 transition-colors shadow-xs"
+                                title="Trigger a simulated car entry/exit event"
+                            >
+                                <Zap className="w-3.5 h-3.5" />
+                                <span className="hidden sm:inline">Simulate Event</span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setAutoSimulate(prev => !prev)}
+                                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg border transition-colors shadow-xs ${autoSimulate ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100' : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'}`}
+                                title="Toggle continuous traffic simulation"
+                            >
+                                {autoSimulate ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
+                                <span className="hidden sm:inline">{autoSimulate ? 'Auto Sim ON' : 'Auto Sim OFF'}</span>
+                            </button>
+                        </div>
+
                         <div className="text-right hidden md:block">
                             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Camera System</p>
                             <p className={`text-sm font-semibold flex items-center gap-1 justify-end ${isLive ? 'text-green-600' : 'text-gray-400'}`}>

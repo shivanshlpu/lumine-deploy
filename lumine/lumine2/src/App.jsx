@@ -12,7 +12,7 @@ import Support from './pages/Support';
 import AdminNotices from './pages/AdminNotices';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminAIHeatmap from './pages/AdminAIHeatmap';
-
+import AdminNotifications from './pages/AdminNotifications';
 import AdminLaneControl from './pages/AdminLaneControl';
 import GuardDashboard from './pages/GuardDashboard';
 import CounterDashboard from './pages/CounterDashboard';
@@ -40,7 +40,7 @@ function App() {
             <Route path="/admin/dashboard" element={<AdminDashboard />} />
             <Route path="/admin/heatmap" element={<Navigate to="/admin/ai-heatmap" replace />} />
             <Route path="/admin/ai-heatmap" element={<AdminAIHeatmap />} />
-
+            <Route path="/admin/notifications" element={<AdminNotifications />} />
             <Route path="/admin/lane" element={<AdminLaneControl />} />
 
             {/* Staff Routes */}

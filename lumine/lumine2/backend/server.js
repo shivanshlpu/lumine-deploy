@@ -5,6 +5,8 @@ if (process.platform === 'win32') {
     } catch (e) {}
 }
 const express = require('express');
+const fs = require('fs');
+const path = require('path');
 const http = require('http');
 const { Server } = require('socket.io');
 const mongoose = require('mongoose');
@@ -19,6 +21,7 @@ const Booking = require('./models/Booking');
 const User = require('./models/User');
 const Admin = require('./models/Admin');
 const SeenCard = require('./models/SeenCard'); // Added
+const AiCamera = require('./models/AiCamera');
 const { keccak256, toUtf8Bytes } = require("ethers");
 const QRCode = require("qrcode");
 const { v4: uuidv4 } = require("uuid");
@@ -380,6 +383,7 @@ mongoose.connect(MONGODB_URI)
     .then(() => {
         console.log('✅ MongoDB Connected Successfully');
         seedDefaultAccounts();
+        seedAiCameras();
     })
     .catch(err => {
         console.error('❌ MongoDB Connection Error:', err.message);
@@ -772,6 +776,43 @@ app.get('/api/alerts', async (req, res) => {
     } catch (err) { res.status(500).json({ error: 'Internal Server Error' }); }
 });
 
+app.post('/api/alerts', async (req, res) => {
+    try {
+        const { alertId, type, senderId, receiverId, location, reason, payload, status } = req.body;
+        const id = alertId || `ALT_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+        const alert = await Alert.findOneAndUpdate(
+            { alertId: id },
+            {
+                alertId: id,
+                type: type || 'camera_offline',
+                senderId: senderId || '',
+                receiverId: receiverId || '',
+                location: location || { lat: 20.8880, lng: 70.4010 },
+                reason: reason || '',
+                payload: payload || {},
+                status: status || 'new',
+                timestamp: new Date()
+            },
+            { upsert: true, new: true, setDefaultsOnInsert: true }
+        );
+        io.emit('new_alert', alert);
+        res.status(201).json(alert);
+    } catch (err) {
+        console.error('Error creating alert:', err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+app.delete('/api/alerts/:id', async (req, res) => {
+    try {
+        await Alert.findOneAndDelete({ alertId: req.params.id });
+        io.emit('alert_deleted', { alertId: req.params.id });
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
 app.post('/api/alerts/:id/ack', async (req, res) => {
     try {
         const alert = await Alert.findOneAndUpdate({ alertId: req.params.id }, { status: 'acknowledged' }, { new: true });
@@ -896,6 +937,27 @@ app.get('/api/bookings/availability', async (req, res) => {
     } catch (err) {
         console.error('Availability Error:', err);
         res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+// ─── AI Crowd Prediction Model Metrics & Metadata ────────────
+app.get('/api/ml/crowd-metrics', async (req, res) => {
+    try {
+        const metricsPath = path.join(__dirname, '../src/data/model_metrics.json');
+        if (fs.existsSync(metricsPath)) {
+            const raw = fs.readFileSync(metricsPath, 'utf8');
+            return res.json(JSON.parse(raw));
+        }
+        res.json({
+            model_name: "Gradient Boosting Regressor (GBRT)",
+            r2_score: 0.9781,
+            mae: 0.0255,
+            rmse: 0.0354,
+            total_samples: 19728,
+            temples: ["somnath", "dwarka", "nageshwar"]
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
 });
 
@@ -1184,7 +1246,7 @@ setInterval(async () => {
     } catch (err) {
         // Background simulator catch
     }
-}, 5000);
+}, 15000);
 
 // POST /api/parking/sync — Receives batch updates from parking_bridge.py
 app.post('/api/parking/sync', async (req, res) => {
@@ -1235,6 +1297,51 @@ app.post('/api/parking/sync', async (req, res) => {
     } catch (err) {
         console.error('Parking sync error:', err);
         res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+// POST /api/parking/event — Real-time Camera AI Vision Gate Event (Entry / Exit)
+app.post('/api/parking/event', async (req, res) => {
+    try {
+        const { zoneId, eventType, plateNumber, plateConfidence, carType, carColor, gateId } = req.body;
+        const targetZone = await ParkingZone.findOne({ zoneId: zoneId || 'A' });
+        if (!targetZone) {
+            return res.status(404).json({ error: 'Parking zone not found' });
+        }
+
+        const isEntering = eventType === 'entering';
+        if (isEntering) {
+            targetZone.occupied = Math.min(targetZone.capacity, (targetZone.occupied || 0) + 1);
+            targetZone.carsIn = (targetZone.carsIn || 0) + 1;
+        } else {
+            targetZone.occupied = Math.max(0, (targetZone.occupied || 0) - 1);
+            targetZone.carsOut = (targetZone.carsOut || 0) + 1;
+        }
+
+        const newEvent = {
+            timestamp: new Date().toISOString(),
+            plateNumber: plateNumber || 'GJ-11-AB-4455',
+            plateConfidence: Number((plateConfidence || 0.95).toFixed(2)),
+            eventType: isEntering ? 'entering' : 'exiting',
+            gateId: gateId || targetZone.gateIds?.[0] || 'gate_1',
+            carType: carType || 'Car',
+            carColor: carColor || 'Silver',
+            sessionId: `vision_${Date.now()}`
+        };
+
+        targetZone.recentEvents.unshift(newEvent);
+        targetZone.trimEvents();
+        targetZone.status = targetZone.computeStatus();
+        targetZone.lastUpdated = new Date();
+        await targetZone.save();
+
+        const allZones = await ParkingZone.find().sort({ zoneId: 1 });
+        io.emit('parking-update', allZones);
+
+        res.json({ success: true, event: newEvent, zone: targetZone, allZones });
+    } catch (err) {
+        console.error('Error recording parking camera event:', err);
+        res.status(500).json({ error: err.message });
     }
 });
 
@@ -1372,9 +1479,13 @@ app.get('/api/parking/notices/latest', async (req, res) => {
 });
 
 // ─── AI Vision Camera Heatmap API ────────────────────────────
-// In-Memory Storage for AI Vision Camera Stream & Projected Heatmap
-let aiVisionCameras = {
-    "cam_1": {
+// In-Memory Storage & MongoDB Cache for AI Vision Camera Stream & Projected Heatmap
+let aiVisionCameras = {};
+let aiCameraPoints = {}; // { cam_id: [ {lat, lon, count} ] } — Strictly stores real camera detections
+let aiCameraFrames = {}; // { cam_id: base64/bytes }
+
+const DEFAULT_AI_CAMERAS = [
+    {
         id: "cam_1",
         lat: 20.8880,
         lon: 70.4010,
@@ -1383,9 +1494,11 @@ let aiVisionCameras = {
         name: "Main Gate AI Cam",
         source: "0",
         height: 3.5,
-        tilt: 20.0
+        tilt: 20.0,
+        status: "Online",
+        lastFeedTime: new Date()
     },
-    "cam_2": {
+    {
         id: "cam_2",
         lat: 20.8886,
         lon: 70.4004,
@@ -1394,9 +1507,11 @@ let aiVisionCameras = {
         name: "East Plaza Cam",
         source: "1",
         height: 4.0,
-        tilt: 25.0
+        tilt: 25.0,
+        status: "Online",
+        lastFeedTime: new Date()
     },
-    "cam_3": {
+    {
         id: "cam_3",
         lat: 20.8874,
         lon: 70.4018,
@@ -1405,9 +1520,11 @@ let aiVisionCameras = {
         name: "Queue Complex Cam",
         source: "2",
         height: 3.0,
-        tilt: 18.0
+        tilt: 18.0,
+        status: "Online",
+        lastFeedTime: new Date()
     },
-    "cam_4": {
+    {
         id: "cam_4",
         lat: 20.8882,
         lon: 70.4022,
@@ -1416,12 +1533,61 @@ let aiVisionCameras = {
         name: "Inner Sanctum Entry Cam",
         source: "3",
         height: 3.2,
-        tilt: 22.0
+        tilt: 22.0,
+        status: "Online",
+        lastFeedTime: new Date()
+    }
+];
+
+// Seed and Sync AI Cameras with MongoDB
+const seedAiCameras = async () => {
+    try {
+        const count = await AiCamera.countDocuments();
+        if (count === 0) {
+            console.log('📷 Seeding default AI Vision Cameras to MongoDB...');
+            for (const cam of DEFAULT_AI_CAMERAS) {
+                await AiCamera.create(cam);
+            }
+        }
+        const allDbCams = await AiCamera.find().lean();
+        allDbCams.forEach(cam => {
+            aiVisionCameras[cam.id] = {
+                id: cam.id,
+                name: cam.name,
+                lat: cam.lat,
+                lon: cam.lon,
+                angle: cam.angle,
+                fov: cam.fov,
+                source: cam.source,
+                height: cam.height,
+                tilt: cam.tilt,
+                status: cam.status || 'Connecting',
+                lastFeedTime: cam.lastFeedTime || new Date()
+            };
+        });
+        console.log(`✅ Loaded ${Object.keys(aiVisionCameras).length} AI Vision Cameras from MongoDB`);
+    } catch (err) {
+        console.error('⚠️ AI Camera Seeding / Load Error:', err.message);
+        DEFAULT_AI_CAMERAS.forEach(cam => {
+            aiVisionCameras[cam.id] = { ...cam };
+        });
     }
 };
 
-let aiCameraPoints = {}; // { cam_id: [ {lat, lon, count} ] } — Strictly stores real camera detections
-let aiCameraFrames = {}; // { cam_id: base64/bytes }
+// Periodic Background Health Check: 60-second threshold for Offline detection
+setInterval(async () => {
+    const now = Date.now();
+    for (const camId in aiVisionCameras) {
+        const cam = aiVisionCameras[camId];
+        const lastFeed = cam.lastFeedTime ? new Date(cam.lastFeedTime).getTime() : 0;
+        if (lastFeed && (now - lastFeed >= 60000)) {
+            if (cam.status !== 'Offline') {
+                cam.status = 'Offline';
+                AiCamera.updateOne({ id: camId }, { $set: { status: 'Offline' } }).catch(() => {});
+            }
+        }
+    }
+}, 5000);
 
 // Helper function to project camera local coordinates (relX meters, relY meters) to GPS lat/lon
 const relativeToGlobalGps = (cam, relX, relY) => {
@@ -1434,48 +1600,100 @@ const relativeToGlobalGps = (cam, relX, relY) => {
     return { lat: cam.lat + dLat, lon: cam.lon + dLon };
 };
 
-// GET /api/ai-heatmap/cameras — Get all AI cameras
-app.get('/api/ai-heatmap/cameras', (req, res) => {
+// GET /api/ai-heatmap/cameras — Get all AI cameras from DB
+app.get('/api/ai-heatmap/cameras', async (req, res) => {
+    try {
+        const dbCams = await AiCamera.find().lean();
+        if (dbCams && dbCams.length > 0) {
+            dbCams.forEach(c => {
+                aiVisionCameras[c.id] = {
+                    ...c,
+                    ...(aiVisionCameras[c.id] || {})
+                };
+            });
+            return res.json(dbCams);
+        }
+    } catch (err) {
+        console.error('Error fetching cameras from DB:', err.message);
+    }
     res.json(Object.values(aiVisionCameras));
 });
 
-// POST /api/ai-heatmap/cameras — Add new camera
-app.post('/api/ai-heatmap/cameras', (req, res) => {
+// POST /api/ai-heatmap/cameras — Add new camera (Persistent to MongoDB)
+app.post('/api/ai-heatmap/cameras', async (req, res) => {
     const cam = req.body;
     if (!cam || !cam.id) {
         return res.status(400).json({ error: 'Camera ID is required' });
     }
-    aiVisionCameras[cam.id] = {
+    const camData = {
         id: cam.id,
-        lat: cam.lat || 20.8880,
-        lon: cam.lon || 70.4010,
-        angle: cam.angle || 0,
-        fov: cam.fov || 60,
+        lat: typeof cam.lat === 'number' ? cam.lat : 20.8880,
+        lon: typeof cam.lon === 'number' ? cam.lon : 70.4010,
+        angle: typeof cam.angle === 'number' ? cam.angle : 0,
+        fov: typeof cam.fov === 'number' ? cam.fov : 60,
         name: cam.name || `Camera ${cam.id}`,
         source: cam.source || '0',
-        height: cam.height || 3.0,
-        tilt: cam.tilt || 20.0
+        height: typeof cam.height === 'number' ? cam.height : 3.0,
+        tilt: typeof cam.tilt === 'number' ? cam.tilt : 20.0,
+        status: cam.status || 'Connecting',
+        lastFeedTime: cam.lastFeedTime || new Date()
     };
-    res.json(aiVisionCameras[cam.id]);
+
+    try {
+        const saved = await AiCamera.findOneAndUpdate(
+            { id: cam.id },
+            { $set: camData },
+            { upsert: true, new: true, setDefaultsOnInsert: true }
+        );
+        aiVisionCameras[cam.id] = saved.toObject ? saved.toObject() : saved;
+        return res.status(201).json(aiVisionCameras[cam.id]);
+    } catch (err) {
+        console.error('Error saving camera to DB:', err.message);
+        aiVisionCameras[cam.id] = camData;
+        return res.json(aiVisionCameras[cam.id]);
+    }
 });
 
-// PUT /api/ai-heatmap/cameras/:id — Update camera properties/position
-app.put('/api/ai-heatmap/cameras/:id', (req, res) => {
+// PUT /api/ai-heatmap/cameras/:id — Update camera properties/position (Persistent to MongoDB)
+app.put('/api/ai-heatmap/cameras/:id', async (req, res) => {
     const camId = req.params.id;
+    const updateFields = { ...req.body };
+    delete updateFields._id;
+    delete updateFields.id;
+
+    try {
+        const updated = await AiCamera.findOneAndUpdate(
+            { id: camId },
+            { $set: updateFields },
+            { new: true }
+        );
+        if (updated) {
+            aiVisionCameras[camId] = updated.toObject ? updated.toObject() : updated;
+            return res.json(aiVisionCameras[camId]);
+        }
+    } catch (err) {
+        console.error('Error updating camera in DB:', err.message);
+    }
+
     if (!aiVisionCameras[camId]) {
         return res.status(404).json({ error: 'Camera not found' });
     }
     aiVisionCameras[camId] = {
         ...aiVisionCameras[camId],
-        ...req.body,
+        ...updateFields,
         id: camId
     };
     res.json(aiVisionCameras[camId]);
 });
 
-// DELETE /api/ai-heatmap/cameras/:id — Delete camera
-app.delete('/api/ai-heatmap/cameras/:id', (req, res) => {
+// DELETE /api/ai-heatmap/cameras/:id — Delete camera (Persistent in MongoDB)
+app.delete('/api/ai-heatmap/cameras/:id', async (req, res) => {
     const camId = req.params.id;
+    try {
+        await AiCamera.findOneAndDelete({ id: camId });
+    } catch (err) {
+        console.error('Error deleting camera from DB:', err.message);
+    }
     delete aiVisionCameras[camId];
     delete aiCameraPoints[camId];
     delete aiCameraFrames[camId];
@@ -1494,6 +1712,14 @@ app.post('/api/ai-heatmap/cameras/:id/data', (req, res) => {
     if (frame) {
         aiCameraFrames[camId] = frame;
     }
+
+    // Valid feed received: update feed time and online status
+    cam.lastFeedTime = new Date();
+    cam.status = 'Online';
+    AiCamera.updateOne(
+        { id: camId },
+        { $set: { lastFeedTime: new Date(), status: 'Online' } }
+    ).catch(() => {});
 
     const globalPoints = [];
     if (Array.isArray(positions)) {
@@ -1562,6 +1788,14 @@ app.post('/api/ai-heatmap/cameras/:id/feed', (req, res) => {
     const { frame } = req.body;
     if (frame) {
         aiCameraFrames[camId] = frame;
+        if (aiVisionCameras[camId]) {
+            aiVisionCameras[camId].lastFeedTime = new Date();
+            aiVisionCameras[camId].status = 'Online';
+            AiCamera.updateOne(
+                { id: camId },
+                { $set: { lastFeedTime: new Date(), status: 'Online' } }
+            ).catch(() => {});
+        }
         return res.json({ status: 'success' });
     }
     res.status(400).json({ error: 'No frame data provided' });

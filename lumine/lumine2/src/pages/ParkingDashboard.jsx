@@ -21,10 +21,12 @@ import {
     Eye,
     Megaphone,
     Play,
-    Pause
+    Pause,
+    Camera
 } from 'lucide-react';
 import { useTranslation } from '../context/LanguageContext';
 import API_BASE_URL from '../config/api';
+import LiveGateCameraModal from '../components/parking/LiveGateCameraModal';
 
 const API_BASE = API_BASE_URL;
 
@@ -114,6 +116,7 @@ const ParkingDashboard = () => {
     const [selectedZone, setSelectedZone] = useState(null);
     const [zoneLogs, setZoneLogs] = useState([]);
     const [loadingLogs, setLoadingLogs] = useState(false);
+    const [isCameraModalOpen, setIsCameraModalOpen] = useState(false);
 
     // Tabs
     const [activeTab, setActiveTab] = useState('overview');
@@ -191,6 +194,51 @@ const ParkingDashboard = () => {
         });
     }, [extractAllEvents]);
 
+    // Live Camera AI Gate Detection Event Handler
+    const handleCameraEventRecorded = useCallback((eventPayload) => {
+        setParkingData(prevZones => {
+            const updated = prevZones.map(z => {
+                if (z.zoneId === eventPayload.zoneId) {
+                    const isEntering = eventPayload.eventType === 'entering';
+                    const newOccupied = isEntering
+                        ? Math.min(z.capacity, (z.occupied || 0) + 1)
+                        : Math.max(0, (z.occupied || 0) - 1);
+                    const newCarsIn = isEntering ? (z.carsIn || 0) + 1 : z.carsIn;
+                    const newCarsOut = !isEntering ? (z.carsOut || 0) + 1 : z.carsOut;
+                    const events = [
+                        {
+                            timestamp: new Date().toISOString(),
+                            plateNumber: eventPayload.plateNumber,
+                            plateConfidence: eventPayload.plateConfidence,
+                            eventType: eventPayload.eventType,
+                            gateId: eventPayload.gateId,
+                            carType: eventPayload.carType,
+                            carColor: eventPayload.carColor
+                        },
+                        ...(z.recentEvents || [])
+                    ].slice(0, 50);
+
+                    const pct = (newOccupied / z.capacity) * 100;
+                    const status = pct >= 95 ? 'full' : (pct >= 80 ? 'almost_full' : (pct >= 50 ? 'filling' : 'available'));
+
+                    return {
+                        ...z,
+                        occupied: newOccupied,
+                        carsIn: newCarsIn,
+                        carsOut: newCarsOut,
+                        recentEvents: events,
+                        status
+                    };
+                }
+                return z;
+            });
+
+            extractAllEvents(updated);
+            setLastUpdated(new Date());
+            return updated;
+        });
+    }, [extractAllEvents]);
+
     // --- Initial Fetch ---
     useEffect(() => {
         const fetchZones = async () => {
@@ -240,15 +288,15 @@ const ParkingDashboard = () => {
         };
     }, [extractAllEvents]);
 
-    // Client-side auto simulation loop for lively demo
+    // Client-side auto simulation loop (relaxed to 8s and paused when camera modal is active)
     useEffect(() => {
-        if (!autoSimulate) return;
+        if (!autoSimulate || isCameraModalOpen) return;
         const simInterval = setInterval(() => {
             triggerSimulatedEvent();
-        }, 4000);
+        }, 8000);
 
         return () => clearInterval(simInterval);
-    }, [autoSimulate, triggerSimulatedEvent]);
+    }, [autoSimulate, isCameraModalOpen, triggerSimulatedEvent]);
 
     // Auto-scroll vehicle log
     useEffect(() => {
@@ -381,6 +429,14 @@ const ParkingDashboard = () => {
                         <span>Publish Notice</span>
                     </button>
 
+                    <button
+                        onClick={() => setIsCameraModalOpen(true)}
+                        className="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 mt-2 shadow-xs group"
+                    >
+                        <Camera className="w-5 h-5 text-emerald-600 animate-pulse group-hover:scale-110 transition-transform" />
+                        <span className="font-bold">Live Gate Camera</span>
+                    </button>
+
                     <div className="my-4 border-t border-gray-100 mx-2"></div>
 
                     <button onClick={logout} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-gray-500 hover:bg-red-50 hover:text-red-600 transition-all group text-left">
@@ -439,8 +495,18 @@ const ParkingDashboard = () => {
                     </div>
 
                     <div className="flex items-center gap-3 sm:gap-6">
-                        {/* Simulation Controls */}
+                        {/* Simulation & Real Camera Controls */}
                         <div className="flex items-center gap-2">
+                            <button
+                                type="button"
+                                onClick={() => setIsCameraModalOpen(true)}
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold rounded-lg shadow-sm transition-all active:scale-95 border border-emerald-500/40"
+                                title="Open Live Camera for real vehicle entry/exit detection"
+                            >
+                                <Camera className="w-3.5 h-3.5 animate-pulse text-emerald-200" />
+                                <span>Live Gate Camera</span>
+                            </button>
+
                             <button
                                 type="button"
                                 onClick={triggerSimulatedEvent}
@@ -950,6 +1016,15 @@ const ParkingDashboard = () => {
                     )}
                 </main>
             </div>
+
+            {/* Real-time AI Camera Gate Vision Modal */}
+            <LiveGateCameraModal
+                isOpen={isCameraModalOpen}
+                onClose={() => setIsCameraModalOpen(false)}
+                zones={parkingData}
+                activeZoneId={selectedZone?.zoneId || 'A'}
+                onEventRecorded={handleCameraEventRecorded}
+            />
         </div>
     );
 };

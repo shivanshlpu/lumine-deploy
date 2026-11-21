@@ -6,7 +6,7 @@ export const getApiBaseUrl = () => {
     
     // 2. Local Development Fallback
     if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
-        return 'http://localhost:5000';
+        return 'http://localhost:5001';
     }
 
     // 3. Deployed Production Default Fallback (Render Web Service)

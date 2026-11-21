@@ -8,11 +8,20 @@ import {
     getFestivalInfo,
     findBestSlot,
     TIME_SLOTS,
+    TEMPLE_METRICS,
 } from '../data/crowdData';
 
+// Helper to format local Date object to YYYY-MM-DD without UTC timezone drift
+const formatLocalYMD = (d) => {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
+
 /**
- * AI-like crowd prediction hook
- * Combines static crowd model data with real booking data from backend
+ * AI-driven crowd prediction hook
+ * Combines trained Gradient Boosting model predictions with real-time database bookings
  */
 const useCrowdPrediction = (temple, date) => {
     const [slotPredictions, setSlotPredictions] = useState([]);
@@ -33,7 +42,7 @@ const useCrowdPrediction = (temple, date) => {
                 return data; // { "06:00 AM - 08:00 AM": 23, ... }
             }
         } catch (err) {
-            console.log('Availability fetch failed, using predictions only:', err.message);
+            console.log('Availability fetch failed, using AI model predictions only:', err.message);
         }
         return {};
     }, []);
@@ -49,23 +58,26 @@ const useCrowdPrediction = (temple, date) => {
             return;
         }
 
+        let isMounted = true;
+
         const calculate = async () => {
             setIsLoading(true);
 
             // Fetch real booking data
             const bookings = await fetchAvailability(temple, date);
+            if (!isMounted) return;
             setDbBookings(bookings);
 
-            // Calculate per-slot predictions
+            // Calculate per-slot predictions using trained ML model
             const predictions = TIME_SLOTS.map(slot => {
                 const modelLevel = predictCrowdLevel(temple, date, slot);
                 const actualBookings = bookings[slot] || 0;
 
-                // Blend: if we have real data, weight it 60/40 with model
-                // If no real data, use model only
+                // Blend: if we have real booking data, weight it 60/40 with ML model
+                // If no real booking data, use ML model directly
                 let finalLevel;
                 if (actualBookings > 0) {
-                    const bookingFraction = Math.min(actualBookings / 500, 1.0); // ~500 capacity baseline
+                    const bookingFraction = Math.min(actualBookings / 500, 1.0);
                     finalLevel = modelLevel * 0.4 + bookingFraction * 0.6;
                 } else {
                     finalLevel = modelLevel;
@@ -89,8 +101,8 @@ const useCrowdPrediction = (temple, date) => {
             setDateLevel(avgLevel);
             setDateColor(getDateColor(avgLevel));
 
-            // Best slot recommendation
-            const best = findBestSlot(temple, date);
+            // Best slot recommendation using live calculated predictions & contextual factors
+            const best = findBestSlot(temple, date, predictions);
             setBestSlot(best);
 
             // Festival info
@@ -100,21 +112,31 @@ const useCrowdPrediction = (temple, date) => {
         };
 
         calculate();
+
+        return () => {
+            isMounted = false;
+        };
     }, [temple, date, fetchAvailability]);
 
     /**
      * Get predictions for a range of dates (for calendar view)
+     * Formats dates in local time to avoid UTC offset discrepancies
      */
-    const getDateRangePredictions = useCallback((templeId, startDate, days = 42) => {
+    const getDateRangePredictions = useCallback((templeId, startDate, days = 92) => {
         if (!templeId) return [];
 
         const predictions = [];
-        const start = new Date(startDate);
+        let start;
+        if (startDate && typeof startDate === 'string') {
+            const parts = startDate.split('-').map(Number);
+            start = new Date(parts[0], parts[1] - 1, parts[2]);
+        } else {
+            start = new Date();
+        }
 
         for (let i = 0; i < days; i++) {
-            const d = new Date(start);
-            d.setDate(d.getDate() + i);
-            const dateStr = d.toISOString().split('T')[0];
+            const d = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i);
+            const dateStr = formatLocalYMD(d);
             const level = predictDateCrowdLevel(templeId, dateStr);
             const festival = getFestivalInfo(dateStr, templeId);
 
@@ -137,6 +159,7 @@ const useCrowdPrediction = (temple, date) => {
         festivalInfo,
         dbBookings,
         isLoading,
+        modelMetrics: TEMPLE_METRICS,
         getDateRangePredictions,
     };
 };

@@ -29,12 +29,17 @@ const CrowdCalendar = ({ selectedDate, onDateSelect, predictions, temple }) => {
             days.push({ day: null, dateStr: null, isPad: true });
         }
 
+        const pad = (n) => String(n).padStart(2, "0");
+
         // Actual days
         for (let d = 1; d <= lastDay.getDate(); d++) {
             const date = new Date(viewYear, viewMonth, d);
-            const dateStr = date.toISOString().split("T")[0];
+            const dateStr = `${viewYear}-${pad(viewMonth + 1)}-${pad(d)}`;
             const isPast = date < today;
-            const isToday = date.getTime() === today.getTime();
+            const isToday =
+                date.getFullYear() === today.getFullYear() &&
+                date.getMonth() === today.getMonth() &&
+                date.getDate() === today.getDate();
 
             // Max 3 months ahead
             const maxDate = new Date(today);

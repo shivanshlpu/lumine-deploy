@@ -7,6 +7,7 @@ import {
     Headset,
     LogOut,
     X,
+    Car,
 } from 'lucide-react';
 import { useTranslation } from '../context/LanguageContext';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
@@ -96,6 +97,21 @@ const Sidebar = ({ activeTab, onTabChange, isOpen, onClose }) => {
                     >
                         <CalendarPlus className={`w-5 h-5 ${isSlotBookingActive ? '' : 'group-hover:scale-110 transition-transform'}`} />
                         <span>{t('navSlotBooking')}</span>
+                    </button>
+
+                    {/* Parking Advisor */}
+                    <button
+                        onClick={() => handleNavClick(() => {
+                            if (location.pathname !== '/dashboard') {
+                                navigate('/dashboard?tab=parking');
+                            } else {
+                                onTabChange?.('parking');
+                            }
+                        })}
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all group text-left ${activeTab === 'parking' ? 'bg-navy-900 text-white shadow-lg shadow-navy-900/20' : 'text-gray-500 hover:bg-orange-50 hover:text-orange-700'}`}
+                    >
+                        <Car className={`w-5 h-5 ${activeTab === 'parking' ? '' : 'group-hover:scale-110 transition-transform'}`} />
+                        <span>Parking Advisor</span>
                     </button>
 
                     <Link

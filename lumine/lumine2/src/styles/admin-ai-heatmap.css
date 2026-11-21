@@ -313,7 +313,7 @@
     margin-top: 4px;
 }
 
-/* Video Feed Modal */
+/* Video Feed Modal & Floating Picture-in-Picture (PiP) */
 .ai-heatmap-modal-overlay {
     display: flex;
     position: fixed;
@@ -329,6 +329,15 @@
     animation: ai-heatmap-fadeIn 0.2s ease-out;
 }
 
+.ai-heatmap-modal-overlay.minimized {
+    background: transparent;
+    backdrop-filter: none;
+    pointer-events: none; /* Allows interacting with Leaflet map, pan, zoom and controls */
+    justify-content: flex-end;
+    align-items: flex-end;
+    animation: none;
+}
+
 .ai-heatmap-modal-content {
     background: white;
     padding: 24px;
@@ -338,12 +347,233 @@
     position: relative;
     box-shadow: 0 24px 48px rgba(0, 0, 0, 0.2);
     animation: ai-heatmap-scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.ai-heatmap-modal-close {
+/* WhatsApp Call / FaceTime Floating PiP Window in Bottom-Right Corner */
+.ai-heatmap-modal-content.minimized {
+    pointer-events: auto; /* Re-enable clicks on the floating widget itself */
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    width: 320px;
+    max-width: calc(100vw - 32px);
+    padding: 10px 12px;
+    background: #0f172a;
+    border-radius: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.25);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(0, 0, 0, 0.3);
+    z-index: 2010;
+    color: #ffffff;
+    animation: ai-heatmap-pip-in 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.ai-heatmap-modal-content.minimized:hover {
+    box-shadow: 0 20px 48px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(249, 115, 22, 0.5);
+    border-color: rgba(249, 115, 22, 0.4);
+}
+
+@keyframes ai-heatmap-pip-in {
+    from {
+        opacity: 0;
+        transform: scale(0.85) translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+/* Floating PiP Header */
+.ai-heatmap-pip-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 8px;
+    padding: 0 2px;
+}
+
+.ai-heatmap-pip-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+}
+
+.ai-heatmap-pip-live-dot {
+    width: 8px;
+    height: 8px;
+    background-color: #22c55e;
+    border-radius: 50%;
+    flex-shrink: 0;
+    box-shadow: 0 0 8px #22c55e;
+    animation: pip-pulse 1.8s infinite ease-in-out;
+}
+
+@keyframes pip-pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(1.2); }
+}
+
+.ai-heatmap-pip-title {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #f8fafc;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin: 0;
+}
+
+.ai-heatmap-pip-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.ai-heatmap-pip-btn {
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    color: #e2e8f0;
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s;
+    padding: 0;
+}
+
+.ai-heatmap-pip-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    color: #ffffff;
+    transform: scale(1.05);
+}
+
+.ai-heatmap-pip-btn.close:hover {
+    background: #ef4444;
+    border-color: #ef4444;
+    color: #ffffff;
+}
+
+.ai-heatmap-pip-btn.maximize:hover {
+    background: #f97316;
+    border-color: #f97316;
+    color: #ffffff;
+}
+
+/* Floating PiP Viewport */
+.ai-heatmap-modal-viewport {
+    position: relative;
+    width: 100%;
+    background-color: #0f172a;
+    border-radius: 12px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.25s ease;
+}
+
+.ai-heatmap-modal-viewport.full {
+    min-height: 340px;
+}
+
+.ai-heatmap-modal-viewport.minimized {
+    min-height: 180px;
+    height: 180px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Floating PiP Footer */
+.ai-heatmap-pip-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 8px;
+    padding: 4px 8px;
+    background: rgba(15, 23, 42, 0.85);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.ai-heatmap-pip-stat {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #22c55e;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.ai-heatmap-pip-sub {
+    font-size: 0.68rem;
+    color: #94a3b8;
+    font-weight: 500;
+}
+
+/* Modal header top control buttons */
+.ai-heatmap-modal-window-controls {
     position: absolute;
     top: 12px;
     right: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    z-index: 10;
+}
+
+.ai-heatmap-modal-btn-min {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    background: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    border-radius: 50%;
+    color: #475569;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.ai-heatmap-modal-btn-min:hover {
+    background: #e2e8f0;
+    color: #0f172a;
+    border-color: #94a3b8;
+    transform: scale(1.05);
+}
+
+.ai-heatmap-btn-minimize {
+    background: #e2e8f0;
+    color: #334155;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 5px 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.15s;
+}
+
+.ai-heatmap-btn-minimize:hover {
+    background: #cbd5e1;
+    color: #0f172a;
+}
+
+.ai-heatmap-modal-close {
     width: 32px;
     height: 32px;
     padding: 0;
@@ -364,6 +594,7 @@
     background: var(--red, #ef4444);
     color: white;
     border-color: var(--red, #ef4444);
+    transform: scale(1.05);
 }
 
 .ai-heatmap-modal-title {
@@ -473,3 +704,175 @@
         padding: 8px 12px;
     }
 }
+
+/* Status Pill Variants */
+.ai-heatmap-camera-status.online {
+    background: rgba(16, 185, 129, 0.15);
+    color: var(--green, #10b981);
+}
+
+.ai-heatmap-camera-status.offline {
+    background: rgba(239, 68, 68, 0.15);
+    color: var(--red, #ef4444);
+}
+
+.ai-heatmap-camera-status.connecting {
+    background: rgba(245, 158, 11, 0.15);
+    color: #d97706;
+}
+
+.ai-heatmap-camera-status.draft {
+    background: rgba(59, 130, 246, 0.15);
+    color: #2563eb;
+}
+
+/* Scoped Offline Alert Popup (Right-Hand Corner) */
+.ai-heatmap-alerts-wrap {
+    position: absolute;
+    top: 84px;
+    right: 20px;
+    left: auto;
+    transform: none;
+    z-index: 1050;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-width: 380px;
+    width: calc(100% - 40px);
+    pointer-events: none;
+}
+
+.ai-heatmap-alert-card {
+    pointer-events: auto;
+    background: #ffffff;
+    border-left: 4px solid #ef4444;
+    border-radius: 10px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.16), 0 8px 10px -6px rgba(0, 0, 0, 0.08);
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    animation: ai-heatmap-alert-in 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    border: 1px solid rgba(239, 68, 68, 0.25);
+    backdrop-filter: blur(8px);
+}
+
+@keyframes ai-heatmap-alert-in {
+    from {
+        opacity: 0;
+        transform: translateX(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.ai-heatmap-alert-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.ai-heatmap-alert-header-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.ai-heatmap-alert-icon {
+    font-size: 1.1rem;
+    line-height: 1;
+    color: #ef4444;
+    flex-shrink: 0;
+}
+
+.ai-heatmap-alert-title {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #991b1b;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.ai-heatmap-alert-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.ai-heatmap-alert-msg {
+    font-size: 0.74rem;
+    color: #334155;
+    margin: 0 0 6px 0;
+    line-height: 1.35;
+}
+
+.ai-heatmap-alert-meta {
+    font-size: 0.68rem;
+    color: #64748b;
+    font-weight: 500;
+    margin-bottom: 4px;
+}
+
+.ai-heatmap-alert-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 6px;
+    border-top: 1px solid #f1f5f9;
+}
+
+.ai-heatmap-alert-link {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--primary, #d97706);
+    text-decoration: none;
+    transition: color 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.ai-heatmap-alert-link:hover {
+    color: var(--primary-dark, #b45309);
+    text-decoration: underline;
+}
+
+.ai-heatmap-alert-dismiss {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: #94a3b8;
+    font-size: 14px;
+    padding: 2px 4px;
+    transition: color 0.15s;
+    line-height: 1;
+}
+
+.ai-heatmap-alert-dismiss:hover {
+    color: #ef4444;
+}
+
+/* Scoped Toast */
+.ai-heatmap-toast {
+    position: absolute;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1100;
+    background: #0f172a;
+    color: #ffffff;
+    padding: 10px 20px;
+    border-radius: 9999px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    animation: ai-heatmap-alert-in 0.25s ease-out;
+}
+

@@ -1,0 +1,36 @@
+{
+  "model_name": "Gradient Boosting Regressor (GBRT)",
+  "r2_score": 0.9781,
+  "mae": 0.0255,
+  "rmse": 0.0354,
+  "random_forest_r2": 0.9653,
+  "random_forest_mae": 0.0309,
+  "total_samples": 19728,
+  "train_samples": 15782,
+  "test_samples": 3946,
+  "temples": [
+    "somnath",
+    "dwarka",
+    "nageshwar"
+  ],
+  "feature_importances": {
+    "slot_idx": 0.2808,
+    "slot_hour": 0.1773,
+    "dow_mult": 0.1674,
+    "prev_day_crowd": 0.0993,
+    "temperature": 0.0817,
+    "season_mult": 0.0519,
+    "rolling_7d": 0.0268,
+    "temple_code": 0.0234,
+    "is_aarti": 0.0234,
+    "festival_mult": 0.0218,
+    "is_purnima": 0.0214,
+    "is_festival": 0.0122,
+    "is_ekadashi": 0.0058,
+    "is_shiva_temple": 0.0036,
+    "is_krishna_temple": 0.0024,
+    "day_of_week": 0.0005,
+    "month": 0.0001,
+    "is_weekend": 0.0
+  }
+}

@@ -1,3 +1,26 @@
+# Dependencies & Build
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# Prohibited file types requested by user
+*.md
+*.pdf
+
+# Environment & Secrets
+.env
+.env.*
+*.env
+!.env.example
+pass.txt
+
+# Binary / Big files / OS
 block/temple_pass.zip
 SIH_parking_camera/
-
+*.pt
+__pycache__/
+*.py[cod]
+.DS_Store
+Thumbs.db
+.vscode/

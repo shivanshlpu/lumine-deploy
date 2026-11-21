@@ -5,6 +5,7 @@ import Sidebar from '../components/Sidebar';
 import BookingCard from '../components/BookingCard';
 import MembersCard from '../components/MembersCard';
 import DigitalIdCard from '../components/DigitalIdCard';
+import DevoteeParkingCard from '../components/parking/DevoteeParkingCard';
 import SlotBooking from './SlotBooking';
 
 import useBooking from '../hooks/useBooking';
@@ -120,9 +121,25 @@ const Dashboard = () => {
 
                                 <div className="lg:col-span-4 space-y-6">
                                     <DigitalIdCard bookingData={bookingData} />
+                                    <DevoteeParkingCard templeName={bookingData?.temple} />
                                 </div>
                             </div>
                         </>
+                    )}
+
+                    {/* PARKING ADVISOR TAB */}
+                    {activeTab === 'parking' && (
+                        <div className="max-w-4xl mx-auto space-y-6">
+                            <div>
+                                <h2 className="text-2xl font-serif font-bold text-navy-900 mb-1">
+                                    Live Temple Parking Advisor
+                                </h2>
+                                <p className="text-gray-500 text-sm">
+                                    Check available vehicle parking slots and get AI recommendations with shortest walking distance
+                                </p>
+                            </div>
+                            <DevoteeParkingCard templeName={bookingData?.temple} />
+                        </div>
                     )}
 
                     {/* SLOT BOOKING TAB */}

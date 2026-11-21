@@ -50,6 +50,7 @@ export const LanguageProvider = ({ children }) => {
             adminAIHeatmap: "AI Vision",
             adminGuard: "Guard Teams",
             adminLane: "Lane Control",
+            adminNotifications: "Notifications",
             adminSettings: "Settings",
 
             // Forgot Password
@@ -132,6 +133,7 @@ export const LanguageProvider = ({ children }) => {
             adminAIHeatmap: "AI विज़न",
             adminGuard: "गार्ड टीमें",
             adminLane: "लेन नियंत्रण",
+            adminNotifications: "सूचनाएं",
             adminSettings: "सेटिंग्स",
 
             // Forgot Password
@@ -214,6 +216,7 @@ export const LanguageProvider = ({ children }) => {
             adminAIHeatmap: "AI વિઝન",
             adminGuard: "ગાર્ડ ટીમો",
             adminLane: "લેન નિયંત્રણ",
+            adminNotifications: "સૂચનાઓ",
             adminSettings: "સેટિંગ્સ",
 
             // Forgot Password

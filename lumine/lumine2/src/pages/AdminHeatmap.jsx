@@ -5,6 +5,7 @@ import MapDashboard from '../components/MapDashboard';
 import ViewControls from '../components/admin/heatmap/ViewControls';
 import DetailsPanel from '../components/admin/heatmap/DetailsPanel';
 import ToastNotification from '../components/admin/heatmap/ToastNotification';
+import API_BASE_URL from '../config/api';
 import '../styles/admin-heatmap.css';
 import '../styles/admin.css';
 
@@ -15,7 +16,7 @@ const AdminHeatmap = () => {
     const [selectedLane, setSelectedLane] = useState(null);
     const [showToast, setShowToast] = useState(false);
 
-    const API_BASE = `http://${window.location.hostname}:5000`;
+    const API_BASE = API_BASE_URL;
 
     useEffect(() => {
         // 1. Initial Fetch

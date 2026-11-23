@@ -1,0 +1,31 @@
+name: "MyCo AI Code Review"
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+  checks: write
+
+jobs:
+  myco-review:
+    name: "MyCo SDET Review"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout Target Repository"
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: "Run MyCo AI Code Review"
+        uses: MycoIntelligence/myco-bundled-action@v1
+        env:
+          MYCO_CONTROL_PLANE_URL: "https://myco-deploy.onrender.com"
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+        with:
+          pr_link: ${{ github.event.pull_request.html_url }}
+          api_key: ${{ secrets.LLM_API_KEY }}
+          control_plane_url: "https://myco-deploy.onrender.com"

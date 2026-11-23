@@ -27,5 +27,5 @@ jobs:
           api_key: ${{ secrets.LLM_API_KEY || secrets.MYCO_LLM_KEY }}
           llm_provider: "groq"
           metrics_endpoint: "https://myco-deploy.onrender.com/api/ingest-metrics"
-          metrics_api_key: "myco-metrics-key"
+          metrics_api_key: "Blt5y2XJ_MnQVZXINkzuK-CnP6kyjmA8-dyZe0TJE4c"
           client_id: "war"

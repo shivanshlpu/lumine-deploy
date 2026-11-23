@@ -5,10 +5,10 @@ on:
     types: [opened, synchronize, reopened]
 
 permissions:
-  id-token: write
   contents: read
   pull-requests: write
   checks: write
+  issues: write
 
 jobs:
   myco-review:
@@ -22,10 +22,10 @@ jobs:
 
       - name: "Run MyCo AI Code Review"
         uses: MycoIntelligence/myco-bundled-action@v1
-        env:
-          MYCO_CONTROL_PLANE_URL: "https://myco-deploy.onrender.com"
-          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
         with:
           pr_link: ${{ github.event.pull_request.html_url }}
           api_key: ${{ secrets.LLM_API_KEY }}
-          control_plane_url: "https://myco-deploy.onrender.com"
+          llm_provider: "groq"
+          metrics_endpoint: "https://myco-deploy.onrender.com/api/ingest-metrics"
+          metrics_api_key: "myco-metrics-key"
+          client_id: "war"

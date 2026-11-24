@@ -1,0 +1,31 @@
+name: Myco PR Review
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+  checks: write
+jobs:
+  review:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.head_ref != 'myco/setup-review-workflow'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Request Myco review access
+        id: myco_access
+        uses: MycoIntelligence/myco-bundled-action/auth@fa557ec81ded18bd54b65578ffdece8be2425856
+        with:
+          control_plane_url: ${{ vars.MYCO_CONTROL_PLANE_URL || vars.CONTROL_PLANE_URL || 'https://myco-deploy.onrender.com' }}
+          oidc_audience: ${{ vars.MYCO_OIDC_AUDIENCE || vars.OIDC_AUDIENCE || 'https://myco.intelligence' }}
+      - name: Run Myco review
+        uses: MycoIntelligence/myco-bundled-action@fa557ec81ded18bd54b65578ffdece8be2425856
+        with:
+          pr_link: ${{ github.event.pull_request.html_url }}
+          api_key: ${{ secrets.LLM_API_KEY || secrets.OPENAI_API_KEY || secrets.MYCO_LLM_KEY || secrets.MYCO_LLM_API_KEY }}
+          llm_provider: ${{ vars.MYCO_LLM_PROVIDER || vars.LLM_PROVIDER || 'openai' }}
+          follow_intent_links: ${{ vars.MYCO_FOLLOW_INTENT_LINKS || vars.FOLLOW_INTENT_LINKS || 'false' }}
+          create_tickets: ${{ vars.MYCO_CREATE_TICKETS || vars.CREATE_TICKETS || 'false' }}
+          metrics_endpoint: ${{ vars.MYCO_CONTROL_PLANE_URL || vars.CONTROL_PLANE_URL || 'https://myco-deploy.onrender.com' }}/api/ingest-metrics
+          metrics_api_key: ${{ steps.myco_access.outputs.grant }}
+          client_id: ${{ steps.myco_access.outputs.client_id }}
